@@ -12,6 +12,8 @@ ctypedef np.uint8_t DTYPE_UINT8_t
 DTYPE_FLOAT = np.float 
 ctypedef np.float_t DTYPE_FLOAT_t
 
+@cython.boundscheck(False)
+@cython.wraparound(False) 
 cdef np.ndarray[DTYPE_INT_t,ndim = 4] angle_const_hist_c(np.ndarray[DTYPE_INT_t,ndim = 2] lines, int n_angle_bin, int n_const_bin, int min_angle, int max_angle, int min_const, int max_const):
 	cdef int i,ang_bin,const_bin
 	cdef int n_line = line.shape[0]
@@ -34,4 +36,5 @@ def angle_const_hist(lines, n_angle_bin = 16, n_const_bin = 16, min_angle = -np.
 		raise ValueError("line.shape[1] != 2")
 
 	return angle_const_hist_c(lines, n_angle_bin, n_const_bin, min_angle, max_angle, min_const, max_const)
-	
+
+
