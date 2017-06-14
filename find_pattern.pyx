@@ -14,7 +14,7 @@ ctypedef np.float_t DTYPE_FLOAT_t
 
 @cython.boundscheck(False)
 @cython.wraparound(False) 
-cdef float find_grade_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img,int x,int y,int squre_size):
+cdef float find_grad_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img,int x,int y,int squre_size):
 	cdef int max_h = img.shape[0]
 	cdef int max_w = img.shape[1]
 	cdef float dy,dx,ang
@@ -58,19 +58,19 @@ cdef float find_grade_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img,int x,int y,int s
 	ang = -np.arctan2(dy,dx) + np.pi/4# tangent = 90 - grad
 	return ang
 
-def find_grade(np.ndarray[DTYPE_UINT8_t,ndim = 3] img,int x,int y,int squre_size = 3):
+def find_grad(np.ndarray[DTYPE_UINT8_t,ndim = 3] img,int x,int y,int squre_size = 3):
 	if img.shape[2] != 3:
 		raise ValueError("Image must have 3 color channels")
-	return find_grade_c(img,x,y,squre_size)
+	return find_grad_c(img,x,y,squre_size)
 
 @cython.boundscheck(False)
 @cython.wraparound(False) 
 cdef int color_classify_c(np.ndarray[DTYPE_UINT8_t,ndim = 1] val,np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int n_color):
 	cdef int i
 	for i in range(0,n_color):
-		if color[i][0][0]<val[0] and color[i][1][0]>val[0]:
-			if color[i][0][1]<val[1] and color[i][1][1]>val[1]:
-				if color[i][0][2] < val[2] and color[i][1][2] > val[2]:
+		if color[i][0][0]<=val[0] and color[i][1][0]>=val[0]:
+			if color[i][0][1]<=val[1] and color[i][1][1]>=val[1]:
+				if color[i][0][2] <= val[2] and color[i][1][2] >= val[2]:
 					return i
 	return i+1
 
@@ -87,12 +87,18 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT
 	cdef np.ndarray[DTYPE_INT_t,ndim = 3] out = np.zeros([n_color+1,(max_h//step)*(max_w//grid_dis)+1,2],dtype = DTYPE_INT)
 
 	for x in range(0,max_w,grid_dis):
+		current_color = -1
+		pre_color = -1
 		for y in range(0,max_h,step):
 			current_color = color_classify_c(img[y,x],color,n_color)
-			if current_color != pre_color and current_color>-1:
-				out[current_color][color_count[current_color]][0] = y
-				out[current_color][color_count[current_color]][1] = x
-				color_count[current_color] += 1
+			if current_color != pre_color and current_color>-1 and y != 0:
+				if pre_color > -1:
+					out[current_color][color_count[current_color]][0] = y
+					out[current_color][color_count[current_color]][1] = x
+					out[pre_color][color_count[pre_color]][0] = y
+					out[pre_color][color_count[pre_color]][1] = x
+					color_count[pre_color] += 1
+					color_count[current_color] += 1
 				pre_color = current_color
 	return out
 
@@ -117,12 +123,18 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_y_c(np.ndarray[DTYPE_UINT
 	cdef np.ndarray[DTYPE_INT_t,ndim = 3] out = np.zeros([n_color+1,(max_h//grid_dis)*(max_w//step)+1,2],dtype = DTYPE_INT)
 	
 	for y in range(0,max_h,grid_dis):
+		current_color = -1
+		pre_color = -1
 		for x in range(0,max_w,step):
 			current_color = color_classify_c(img[y,x],color,n_color)
-			if current_color != pre_color and current_color != -1:
-				out[current_color][<int>(color_count[current_color])][0] = y
-				out[current_color][<int>(color_count[current_color])][1] = x
-				color_count[current_color] += 1
+			if current_color != pre_color and current_color != -1 and x != 0:
+				if pre_color > -1:
+					out[current_color][color_count[current_color]][0] = y
+					out[current_color][color_count[current_color]][1] = x
+					out[pre_color][color_count[pre_color]][0] = y
+					out[pre_color][color_count[pre_color]][1] = x
+					color_count[pre_color] += 1
+					color_count[current_color] += 1
 				pre_color = current_color
 	return out
 
