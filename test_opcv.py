@@ -19,10 +19,10 @@ for k,v in color_dic.items():
 		color_arr[i][1][j] = v[1][j]
 	i += 1
 start = time.time()
-for i in range(0,20):
+for i in range(0,30):
 	out = find_color_pattern_x(img,color_arr)
 stop = time.time()
-print "fps:",20/(stop-start)
+print "fps:",30/(stop-start)
 
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
 cv2.imshow('image',img)
