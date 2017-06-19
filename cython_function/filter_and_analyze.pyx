@@ -22,7 +22,7 @@ cdef np.ndarray[DTYPE_INT_t,ndim = 3] angle_const_hist_c(np.ndarray[DTYPE_FLOAT_
 	for i in range(0,n_line):
 		if lines[i][0] == 0.0 and lines[i][1] == 0.0:
 			break
-		ang_bin = n_angle_bin*(lines[i][0] - min_angle)//(max_angle - min_angle)
+		ang_bin = n_angle_bin*((lines[i][0] - min_angle))//(max_angle - min_angle)
 		const_bin = n_const_bin*(np.absolute(lines[i][1]) - min_const)//(max_const - min_const)
 		if const_bin > -1 and ang_bin > -1 and const_bin < 16 and ang_bin < 16:
 			if out[1][ang_bin][const_bin] == 0:

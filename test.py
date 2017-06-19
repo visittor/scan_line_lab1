@@ -1,6 +1,7 @@
 import find_pattern
 import line_finder
 import filter_and_analyze
+import circle_finder
 import numpy as np 
 import cv2
 import time
@@ -105,6 +106,19 @@ def test_angle_const_hist(img_name,lines_equa):
 	stop = time.time()
 	return hist
 
+def test_finde_circle_line(img_name, line_hist, indices, points, lines):
+	img = cv2.imread(img_name)
+	h,w,_ = img.shape
+	print img.shape
+
+	start = time.time()
+	for i in range(0,300):
+		circle_hist = circle_finder.find_circle(line_hist, indices, points, lines, w, h, w, nbin_w = 32, nbin_h = 32, nbin_r = 16)
+	stop = time.time()
+	
+	print "---------- finde_circle_line ----------\n","time for function = ",(stop-start)/300,"frame rate = ",300/(stop-start),"\n------------------------------------------\n" 
+	return circle_hist
+
 def show_pic_test(img_name): # string
 	img = cv2.imread(img_name)
 	cv2.namedWindow('image', cv2.WINDOW_NORMAL)
@@ -183,6 +197,19 @@ def create_line_from_hist(img_name, lines, hist, points):
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
 
+def create_circle_from_hist(image_name, circle_hist):
+	img = cv2.imread(image_name)
+	h,w,_ = img.shape
+	indices = np.where( circle_hist > 4 )
+	for i,j,k in zip(indices[0], indices[1], indices[2]):
+		cv2.circle(img, (w*j/32,h*i/32),w*k/32,(255,0,0),2)
+	print indices
+	print circle_hist.max()
+	cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+	cv2.imshow("image",img)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
+
 if __name__ == "__main__":
 	image_name = "circle_2.jpg"
 	out = test_find_color_pattern_x(image_name)
@@ -197,5 +224,9 @@ if __name__ == "__main__":
 	hist = test_angle_const_hist(image_name,lines)
 	print hist
 	create_line_from_hist(image_name, lines, hist, out[1])
+
+	circle_hist = test_finde_circle_line(image_name, hist[1], hist[0], out[1], lines)
+	print circle_hist
+	create_circle_from_hist(image_name, circle_hist)
 	# for i in range(len(d)):
 	# 	print d[i]
