@@ -12,56 +12,6 @@ ctypedef np.uint8_t DTYPE_UINT8_t
 DTYPE_FLOAT = np.float 
 ctypedef np.float_t DTYPE_FLOAT_t
 
-@cython.boundscheck(False)
-@cython.wraparound(False) 
-cdef float find_grad_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img,int x,int y,int squre_size):
-	cdef int max_h = img.shape[0]
-	cdef int max_w = img.shape[1]
-	cdef float dy,dx,ang
-	cdef np.ndarray[DTYPE_UINT8_t,ndim = 1] y1 = np.zeros(3,dtype = DTYPE_UINT8)
-	cdef np.ndarray[DTYPE_UINT8_t,ndim = 1] y2 = np.zeros(3,dtype = DTYPE_UINT8)
-	cdef np.ndarray[DTYPE_UINT8_t,ndim = 1] x1 = np.zeros(3,dtype = DTYPE_UINT8)
-	cdef np.ndarray[DTYPE_UINT8_t,ndim = 1] x2 = np.zeros(3,dtype = DTYPE_UINT8)
-	cdef int i,j
-	for i in range(-squre_size//2,(squre_size//2)+1):
-		for j in range(-squre_size//2,(squre_size//2)+1):
-			if -1 < y+1+i < max_h and -1 < x+1+j < max_w:
-				y1[0] += img[y+1+i,x+1+j,0]
-				y1[1] += img[y+1+i,x+1+j,1]
-				y1[2] += img[y+1+i,x+1+j,2]
-				if -1 < y+i and -1 < x+j:
-					y2[0] += img[y+i,x+j,0]
-					y2[2] += img[y+i,x+j,1]
-					y2[1] += img[y+i,x+j,2] 
-			if -1 < y+1+i < max_h and -1 < x+j < max_w:
-				x1[0] += img[y+1+i,x+j,0]
-				x1[1] += img[y+1+i,x+j,1]
-				x1[2] += img[y+1+i,x+j,2]
-				if -1 < y+i and x+1+j < max_w:
-					x2[0] += img[y+i,x+1+j,0]
-					x2[2] += img[y+i,x+1+j,1]
-					x2[1] += img[y+i,x+1+j,2]
-	y1[0] = y1[0]//squre_size*squre_size
-	y1[1] = y1[1]//squre_size*squre_size
-	y1[2] = y1[2]//squre_size*squre_size
-	y2[0] = y2[0]//squre_size*squre_size
-	y2[1] = y2[1]//squre_size*squre_size
-	y2[2] = y2[2]//squre_size*squre_size
-	x1[0] = x1[0]//squre_size*squre_size
-	x1[1] = x1[1]//squre_size*squre_size
-	x1[2] = x1[2]//squre_size*squre_size
-	x2[0] = x2[0]//squre_size*squre_size
-	x2[1] = x2[1]//squre_size*squre_size
-	x2[2] = x2[2]//squre_size*squre_size
-	dy = np.linalg.norm(y1) - np.linalg.norm(y2)
-	dx = np.linalg.norm(x1) - np.linalg.norm(x2)
-	ang = -np.arctan2(dy,dx) + np.pi/4# tangent = 90 - grad
-	return ang
-
-def find_grad(np.ndarray[DTYPE_UINT8_t,ndim = 3] img,int x,int y,int squre_size = 3):
-	if img.shape[2] != 3:
-		raise ValueError("Image must have 3 color channels")
-	return find_grad_c(img,x,y,squre_size)
 
 @cython.boundscheck(False)
 @cython.wraparound(False) 
