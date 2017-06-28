@@ -80,11 +80,67 @@ def linear_eq(img, region, max_index = 100, squre_size = 1):
 
 	return linear_eq_c(img,region,max_index,squre_size)
 
+cdef np.ndarray[DTYPE_INT_t, ndim = 2] find_line_from_region_center_c(np.ndarray[DTYPE_INT_t, ndim = 2] region_cen, int axis):
+	cdef int len_region = region_cen.shape[0]
+	cdef int i, j, k, l
+	cdef np.ndarray[DTYPE_INT_t, ndim = 2] linklist = np.zeros([len_region, 2], dtype = DTYPE_INT)
+	cdef int counter = 0
+	for i in range(0, len_region):
+		linklist[i][0] -= 1
+		linklist[i][1] -= 1
+	i = 0
+	j = 1
+	k = 0
+	while i < len_region - 1:
+		while i+j < len_region and region_cen[i][axis] == region_cen[i+j][axis]:
+			j += 1
+		counter = j
+		j = 1
+		k = counter+i
+		while k+j < len_region and region_cen[k][axis] == region_cen[k+j][axis]:
+			j += 1
+		if j == counter:
+			for l in range(0, counter):
+				linklist[i+l][1] = k+l
+				linklist[k+l][0] = i+l
+		i = k
+		j = 1
+	return linklist
 
+cdef np.ndarray[DTYPE_INT_t, ndim = 2] line_from_linklist_c( np.ndarray[DTYPE_INT_t, ndim = 2] linklist, np.ndarray[DTYPE_INT_t, ndim = 2] region_cen):
+	cdef int len_region = region_cen.shape[0]
+	cdef np.ndarray[DTYPE_INT_t, ndim = 2] line_list_temp = np.zeros([len_region, 4], dtype = DTYPE_INT)
+	cdef int index = 0
+	cdef int counter = 0
+	cdef int next_index
+	while index < len_region:
+		if linklist[index][0] == -1 and linklist[index][1] != -1:
+			next_index = linklist[index][1]
+			while linklist[next_index][1] != -1:
+				next_index = linklist[next_index][1]
+			line_list_temp[counter][0] = region_cen[index][0]
+			line_list_temp[counter][1] = region_cen[index][1]
+			line_list_temp[counter][2] = region_cen[next_index][0]
+			line_list_temp[counter][3] = region_cen[next_index][1]
+			counter += 1
+		index += 1
+	cdef np.ndarray[DTYPE_INT_t, ndim = 2] line_list = np.zeros([counter, 4], dtype = DTYPE_INT)
+	for i in range(0, counter):
+		line_list[i][0] = line_list_temp[i][0]
+		line_list[i][1] = line_list_temp[i][1]
+		line_list[i][2] = line_list_temp[i][2]
+		line_list[i][3] = line_list_temp[i][3]
 
+	return line_list
 
-
-
+def find_line_from_region_center(region_cen, axis = 0):
+	if region_cen.ndim != 2:
+		raise ValueError("input array must ndim equal to 2")
+	elif region_cen.shape[1] < axis-1 :
+		raise ValueError("region.shape[1] < axis-1")
+	cdef np.ndarray[DTYPE_INT_t, ndim = 2] link_list
+	link_list = find_line_from_region_center_c( region_cen, axis)
+	return line_from_linklist_c( link_list, region_cen)
 
 
 
