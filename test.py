@@ -38,24 +38,26 @@ def test_find_color_pattern_x(img_name):
 	img = cv2.imread(img_name)
 	img_hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
 	# color_dict = {"green":([0,127,0],[127,255,127]),"white":([128,128,128],[255,255,255])} ## for draw picture
-	color_dict = {"green":( [ 41, 41, 0 ], [ 77, 255, 178 ]),"white":( [ 50, 0, 0 ], [ 100, 255, 255 ]), "green_for_roi":( [ 41, 25, 0 ], [ 77, 255, 255 ])}
+	color_dict = {"green":( [ 41, 41, 0 ], [ 49, 255, 149 ]),"white":( [ 50, 0, 100 ], [ 100, 255, 255 ]), "green_for_roi":( [ 41, 25, 0 ], [ 77, 255, 255 ])}
 	color_list = np.zeros((2,2,3),dtype = np.uint8)
 	color_list[0,0] = np.array(color_dict["green"][0] , dtype = np.uint8)
 	color_list[0,1] = np.array(color_dict["green"][1] , dtype = np.uint8) 
 	color_list[1,0] = np.array(color_dict["white"][0] , dtype = np.uint8)
 	color_list[1,1] = np.array(color_dict["white"][1] , dtype = np.uint8)
-	contour, hull, mask = find_roi(img_hsv, ( np.array(color_dict["green_for_roi"][0]), np.array(color_dict["green_for_roi"][1]) ), approx = 0.01)
-	img_hsv = cv2.GaussianBlur(img_hsv,(11,11),0)
+	contour, hull, mask = find_roi(img_hsv, ( np.array(color_dict["green_for_roi"][0]), np.array(color_dict["green_for_roi"][1]) ), approx = 0.01)	
 	cv2.drawContours(mask, [hull], 0, 255, -1)
 	img_hsv = cv2.bitwise_and(img_hsv,img_hsv, mask =  mask)
-	cv2.imshow("image",img_hsv)
+	# img_hsv = cv2.GaussianBlur(img_hsv,(9,9),0)
+	img_hsv = cv2.blur(img_hsv,(9,9))
+	mask2 = cv2.inRange(img_hsv.copy(), np.array(color_dict["white"][0]), np.array(color_dict["white"][1]))
+	cv2.imshow("image",mask2)
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
 	start = time.time()
 	for i in range(0,20):
-		out = find_pattern.find_color_pattern_x(img_hsv, color_list,40,2)
+		out = find_pattern.find_color_pattern_x(img_hsv, color_list,30,2)
 	stop = time.time()
-	for i in out[1]:
+	for i in out[0]:
 		if (i == [0,0]).all():
 			break
 		cv2.circle(img,(i[1],i[0]),1,(255,0,0),-1)
@@ -269,11 +271,11 @@ def create_circle_from_hist(image_name, circle_hist, points):
 	cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-	image_name = "sample_12.jpg"
+	image_name = "sample_9.jpg"
 	out = test_find_color_pattern_x(image_name)
 	# out = test_find_color_pattern_x_cond_c(image_name)
 	print out
-	grads = test_find_grad(image_name,out[1])
+	grads = test_find_grad(image_name,out[0])
 
 	d = create_line(out,grads,image_name)
 

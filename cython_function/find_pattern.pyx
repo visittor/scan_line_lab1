@@ -41,14 +41,14 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT
 		pre_color = -1
 		for y in range(0,max_h,step):
 			current_color = color_classify_c(img[y,x],color,n_color)
-			if current_color != pre_color and current_color>-1 and y != 0:
+			if current_color != pre_color and current_color>-1:
 				out[current_color][color_count[current_color]][0] = y
 				out[current_color][color_count[current_color]][1] = x
+				color_count[current_color] += 1
 				if pre_color > -1:
 					out[pre_color][color_count[pre_color]][0] = y
 					out[pre_color][color_count[pre_color]][1] = x
 					color_count[pre_color] += 1
-				color_count[current_color] += 1
 				pre_color = current_color
 		out[current_color][color_count[current_color]][0] = y-step
 		out[current_color][color_count[current_color]][1] = x
@@ -115,7 +115,7 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_y_c(np.ndarray[DTYPE_UINT
 		pre_color = -1
 		for x in range(0,max_w,step):
 			current_color = color_classify_c(img[y,x],color,n_color)
-			if current_color != pre_color and current_color != -1 and x != 0:
+			if current_color != pre_color and current_color != -1:
 				out[current_color][color_count[current_color]][0] = y
 				out[current_color][color_count[current_color]][1] = x
 				if pre_color > -1:

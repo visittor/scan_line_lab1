@@ -19,6 +19,14 @@ def recieve_video_cam(id):
 	finally:
 		cap.release()
 
+def recieve_video_file(file_name):
+	cap = cv2.VideoCapture(file_name)
+	try:
+		while  1 == 1:
+			ret, img = cap.read()
+			yield img
+	finally:
+		cap.release()
 
 if __name__ == '__main__':
 	is_write = 0
@@ -40,6 +48,7 @@ if __name__ == '__main__':
 			a = 'writing...' if is_write == 1 else "puase..."
 			print a
 
+	reciver.close()
 	out.release()
 	cv2.destroyAllWindows()
 

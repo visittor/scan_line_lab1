@@ -80,9 +80,10 @@ def linear_eq(img, region, max_index = 100, squre_size = 1):
 
 	return linear_eq_c(img,region,max_index,squre_size)
 
-cdef np.ndarray[DTYPE_INT_t, ndim = 2] find_line_from_region_center_c(np.ndarray[DTYPE_INT_t, ndim = 2] region_cen, int axis):
+cdef np.ndarray[DTYPE_INT_t, ndim = 2] region_to_linklist_c(np.ndarray[DTYPE_INT_t, ndim = 2] region_cen, int axis):
 	cdef int len_region = region_cen.shape[0]
-	cdef int i, j, k, l
+	cdef int i, j, k, l 
+	cdef float mag, dot
 	cdef np.ndarray[DTYPE_INT_t, ndim = 2] linklist = np.zeros([len_region, 2], dtype = DTYPE_INT)
 	cdef int counter = 0
 	for i in range(0, len_region):
@@ -101,8 +102,21 @@ cdef np.ndarray[DTYPE_INT_t, ndim = 2] find_line_from_region_center_c(np.ndarray
 			j += 1
 		if j == counter:
 			for l in range(0, counter):
-				linklist[i+l][1] = k+l
-				linklist[k+l][0] = i+l
+				if linklist[i+l][0] == -1: 
+					linklist[i+l][1] = k+l
+					linklist[k+l][0] = i+l
+				else:
+					dot = np.dot(region_cen[linklist[i+l][0]] - region_cen[i+l][0], region_cen[i+l][0] - region_cen[k+l][0])[0]
+					mag = np.linalg.norm(region_cen[linklist[i+l][0]] - region_cen[i+l])*np.linalg.norm(region_cen[i+l] - region_cen[k+l])
+					print dot/mag
+					if dot/mag > 0.1:
+						linklist[i+l][1] = k+l
+						linklist[k+l][0] = i+l
+					else:
+						linklist[linklist[i+l][0]][1] = -1
+						linklist[i+l][0] = -1
+						linklist[i+l][1] = -1
+
 		i = k
 		j = 1
 	return linklist
@@ -139,7 +153,7 @@ def find_line_from_region_center(region_cen, axis = 0):
 	elif region_cen.shape[1] < axis-1 :
 		raise ValueError("region.shape[1] < axis-1")
 	cdef np.ndarray[DTYPE_INT_t, ndim = 2] link_list
-	link_list = find_line_from_region_center_c( region_cen, axis)
+	link_list = region_to_linklist_c( region_cen, axis)
 	return line_from_linklist_c( link_list, region_cen)
 
 
