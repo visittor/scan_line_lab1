@@ -7,6 +7,7 @@ import cv2
 import time
 import math
 from region_of_interest import find_roi
+from haar import *
 
 def test_find_color_pattern_y(img_name):
 	img = cv2.imread(img_name)
@@ -178,7 +179,7 @@ def test_find_region_center(img_name, region, axis = 0):
 	cv2.imshow('img', img)
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
-	return region_center
+	return line_list
 
 
 def show_pic_test(img_name): # string
@@ -271,7 +272,7 @@ def create_circle_from_hist(image_name, circle_hist, points):
 	cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-	image_name = "sample_9.jpg"
+	image_name = "sample_8.jpg"
 	out = test_find_color_pattern_x(image_name)
 	# out = test_find_color_pattern_x_cond_c(image_name)
 	print out
@@ -279,8 +280,22 @@ if __name__ == "__main__":
 
 	d = create_line(out,grads,image_name)
 
-	test_find_region_center(image_name, out[1], axis = 1)
+	line_list = test_find_region_center(image_name, out[1], axis = 1)
 
+	img = cv2.imread(image_name, 0)
+	int_img = cv2.integral(img)
+	font = cv2.FONT_HERSHEY_SIMPLEX
+	for y1, x1, y2, x2 in line_list:
+		h_edge1 = edge_haar_top(int_img, x1, y1, (5,5))
+		h_edge2 = edge_haar_top(int_img, x2, y2, (5,5))
+		h_point1 = point_haar_top_left(int_img, x1, y1, (5,5))
+		h_point2 = point_haar_top_left(int_img, x2, y2, (5,5))
+		cv2.putText(img, str((h_edge1, h_point1)), (x1,y1), font, 0.3, 255, 1, cv2.LINE_AA)
+		cv2.putText(img, str((h_edge2, h_point2)), (x2,y2), font, 0.3, 255, 1, cv2.LINE_AA)
+
+	cv2.imshow("frame", img)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
 	# lines = test_linear_eq(image_name,out[1])
 	# create_line_from_eq(lines, image_name, out[1])
 

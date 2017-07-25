@@ -19,12 +19,16 @@ def recieve_video_cam(id):
 	finally:
 		cap.release()
 
-def recieve_video_file(file_name):
+def recieve_video_file(file_name, repeat = 1):
 	cap = cv2.VideoCapture(file_name)
 	try:
 		while  1 == 1:
 			ret, img = cap.read()
-			yield img
+			if not ret :
+				cap.set( 2, 0)
+				ret,frame = cap.read()
+			if ret:
+				yield img
 	finally:
 		cap.release()
 

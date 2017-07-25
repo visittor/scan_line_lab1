@@ -36,13 +36,15 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT
 	cdef np.ndarray[DTYPE_INT_t,ndim = 1] color_count = np.zeros(n_color+1,dtype = DTYPE_INT)
 	cdef np.ndarray[DTYPE_INT_t,ndim = 3] out = np.zeros([n_color+1,(max_h//step)*(max_w//grid_dis)+1,2],dtype = DTYPE_INT)
 
-	for x in range(0,max_w,grid_dis):
+	# for x in range(1,max_w,grid_dis):
+	while x < max_w:
 		current_color = -1
 		pre_color = -1
-		for y in range(0,max_h,step):
+		# for y in range(1,max_h,step):
+		while y < max_h:
 			current_color = color_classify_c(img[y,x],color,n_color)
 			if current_color != pre_color and current_color>-1:
-				out[current_color][color_count[current_color]][0] = y
+				out[current_color][color_count[current_color]][0] = y 
 				out[current_color][color_count[current_color]][1] = x
 				color_count[current_color] += 1
 				if pre_color > -1:
@@ -50,9 +52,12 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT
 					out[pre_color][color_count[pre_color]][1] = x
 					color_count[pre_color] += 1
 				pre_color = current_color
+			y += step
 		out[current_color][color_count[current_color]][0] = y-step
 		out[current_color][color_count[current_color]][1] = x
 		color_count[current_color] += 1
+
+		x += grid_dis
 	return out
 
 @cython.boundscheck(False)
@@ -75,7 +80,7 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_cond_c(np.ndarray[DTYPE
 			x = p[1]
 			current_color = -1
 			pre_color = -1
-			for y in range(0,max_h,step):
+			for y in range(1,max_h,step):
 				current_color = color_classify_c(img[y,x],color,n_color)
 				if current_color != pre_color and current_color>-1 and y != 0:
 					if pre_color > -1:
@@ -110,10 +115,10 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_y_c(np.ndarray[DTYPE_UINT
 	cdef np.ndarray[DTYPE_INT_t,ndim = 1] color_count = np.zeros(n_color+1,dtype = DTYPE_INT)
 	cdef np.ndarray[DTYPE_INT_t,ndim = 3] out = np.zeros([n_color+1,(max_h//grid_dis)*(max_w//step)+1,2],dtype = DTYPE_INT)
 	
-	for y in range(0,max_h,grid_dis):
+	for y in range(1,max_h,grid_dis):
 		current_color = -1
 		pre_color = -1
-		for x in range(0,max_w,step):
+		for x in range(1,max_w,step):
 			current_color = color_classify_c(img[y,x],color,n_color)
 			if current_color != pre_color and current_color != -1:
 				out[current_color][color_count[current_color]][0] = y

@@ -8,8 +8,8 @@ def find_roi(img, interest_color, approx = -1):
 	mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 	# mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 	kernel = np.ones((5,5),np.uint8)
-	mask = cv2.dilate(mask,kernel,iterations = 10)
-	mask = cv2.erode(mask,kernel,iterations = 21)
+	mask = cv2.dilate(mask,kernel,iterations = 5)
+	mask = cv2.erode(mask,kernel,iterations = 25)
 	im2, contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 	cnt = contours[0]
 	A = cv2.contourArea(cnt)
