@@ -3,3 +3,6 @@
 *.pyc
 *.jpg
 *.avi
+*.o
+*.def
+*.html
