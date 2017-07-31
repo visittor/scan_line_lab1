@@ -26,7 +26,7 @@ def recieve_video_file(file_name, repeat = 1):
 			ret, img = cap.read()
 			if not ret :
 				cap.set( 2, 0)
-				ret,frame = cap.read()
+				ret,img = cap.read()
 			if ret:
 				yield img
 	finally:
