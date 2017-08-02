@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-cap = cv2.VideoCapture('sample_3.avi')
+cap = cv2.VideoCapture('sample_with_robot_3.avi')
 cv2.namedWindow('set')
 def nothing(somethings):
     pass
@@ -20,7 +20,7 @@ while True:
             cap.set( 2, 0)
             ret,frame = cap.read()
     # frame = cv2.flip(frame,0)
-        frame = cv2.GaussianBlur(frame,(21,21),0)
+        frame = cv2.GaussianBlur(frame,(3,3),0)
     tran_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
     H1 = cv2.getTrackbarPos('B1', 'set')
     H2 = cv2.getTrackbarPos('B2', 'set')
@@ -38,10 +38,10 @@ while True:
     #     print 'a'
     #     for i in circle[0, :]:
     #         cv2.circle(frame, (i[0], i[1]), i[2], (0, 0, 0), 2)
-
-    cv2.imshow('mask',mask)
-    cv2.imshow('frame',frame)
-    cv2.imshow('roi',roi)
+    stack1 = np.hstack([frame, roi])
+    stack2 = np.hstack([tran_frame[:, :, 0], tran_frame[:, :, 1], tran_frame[:, :, 2]])
+    cv2.imshow('stack1',stack1)
+    cv2.imshow('stack2',stack2)
     # stack = np.hstack((frame, mask))
     # cv2.imshow('window',stack)
     k = cv2.waitKey(10)

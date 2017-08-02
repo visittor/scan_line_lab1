@@ -45,7 +45,7 @@ if __name__ == '__main__':
 		if is_write:
 			out.write(img)
 		k = cv2.waitKey(1)
-		if k&0XFF == ord('q'):
+		if k&0XFF == 27:
 			break
 		elif k&0XFF == ord('s'):
 			is_write = (is_write+1)%2

@@ -3,18 +3,23 @@ import cv2
 import numpy as np
 from recieve_picture import recieve_video_file
 from scanline import ScanLine
+from line_provider import Line_provider
 
-file_name = "sample_3.avi"
+file_name = "sample_with_robot_1.avi"
+# file_name = "sample_7_no_robot.avi"
 reciever = recieve_video_file(file_name)
 
-color_dict = {"white":( [ 0, 0, 70], [ 255, 70, 255 ]), "green":( [ 36, 70, 0 ], [ 70, 255, 149 ])}
+# color_dict = {"white":( [ 0, 0, 70], [ 255, 70, 255 ]), "green":( [ 36, 70, 0 ], [ 70, 255, 149 ])}
+color_dict = {"white":( [ 0, 0, 70], [ 255, 41, 255 ]), "green":( [ 30, 41, 0 ], [ 100, 255, 255 ])}
 color_list = np.zeros((2,2,3),dtype = np.uint8)
 color_list[0,0] = np.array(color_dict["white"][0] , dtype = np.uint8)
 color_list[0,1] = np.array(color_dict["white"][1] , dtype = np.uint8) 
 color_list[1,0] = np.array(color_dict["green"][0] , dtype = np.uint8)
 color_list[1,1] = np.array(color_dict["green"][1] , dtype = np.uint8)
 
-sc = ScanLine(color_list = color_list)
+sc = ScanLine(color_list = color_list, grid_dis = 20, scan_axis = 1, co = 10)
+# sc = ScanLine(color_list = color_list, grid_dis = 1, scan_axis = 0, step = 20 )
+lp = Line_provider()
 
 is_stop = 1
 is_write = 0
@@ -47,30 +52,32 @@ while 1 == 1:
 	# 	cv2.circle(from_region,(i[0],i[2]),2,(0,0,255),-1)
 	sc.find_region(img_hsv)
 	sc.clip_region(1)
-	sc.unite_region()
-	lines_ = sc.to_line_eq()
-	# point_array = sc.link_list_to_list()
-	# for p,c in point_array:
-	# 	print p[0], p[-1]
-	# 	color = (0,0,255) if c == 0 else (0,0,0)
-	# 	cv2.line(img, (p[0][0], p[0][1]), (p[-1][0], p[-1][1]), color, 2)
+	lp.recive_region(sc)
+	lp.unite_region()
+	lines_ = lp.get_lines()
+	lines_2 = lp.to_line_eq()
+	for l in lines_2:
+		y1 = int(l[0]*l[2] + l[1])
+		y2 = int(l[0]*l[3] + l[1])
+		color = (255,100,0) if l[4] == 0 else (0,0,0)
+		cv2.line(img, (int(l[2]), y1), (int(l[3]), y2), color, 5)
 	for l in lines_:
 		y1 = int(l[0]*l[2] + l[1])
 		y2 = int(l[0]*l[3] + l[1])
 		color = (0,100,255) if l[4] == 0 else (0,0,0)
 		cv2.line(img, (int(l[2]), y1), (int(l[3]), y2), color, 3)
-
 	sc.visualize_region(from_region)
-	sc.visualize_united_region(from_region)
-
+	lp.visualize_united_region(from_region)
+	# sc.visualize_scan_line(from_region)
 	out_img = np.hstack([img, from_region])
 	# print out_img.shape
 	cv2.imshow("img", out_img)
+	cv2.imshow("img_hsv", img_hsv[:, :, 1])
 
 	if is_write:
 			out.write(out_img)
 
-	k = cv2.waitKey(1)
+	k = cv2.waitKey(10)
 	if k == 27:
 		break
 	elif k == ord('s'):

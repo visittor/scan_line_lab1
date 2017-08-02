@@ -19,9 +19,9 @@ ctypedef np.float_t DTYPE_FLOAT_t
 cdef unsigned int color_classify_c(int val1, int val2, int val3,np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int n_color):
 	cdef int i
 	for i in range(0,n_color):
-		if color[i][0][0]<=val1 and color[i][1][0]>=val1:
-			if color[i][0][1]<=val2 and color[i][1][1]>=val2:
-				if color[i][0][2] <= val3 and color[i][1][2] >= val3:
+		if color[i, 0, 0]<=val1 and color[i, 1, 0]>=val1:
+			if color[i, 0, 1]<=val2 and color[i, 1, 1]>=val2:
+				if color[i, 0, 2] <= val3 and color[i, 1, 2] >= val3:
 					return i
 	return i+1
 
@@ -32,10 +32,10 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT
 	cdef int max_w = img.shape[1]
 	cdef int max_h = img.shape[0]
 	cdef int n_color = color.shape[0]
-	cdef int x = 0,y = 0
-	cdef unsigned int current_color = -1
+	cdef unsigned int x = 0,y = 0
+	cdef int current_color = -1
 	cdef unsigned int loop_counter = 0
-	cdef int color_count = 0
+	cdef unsigned int color_count = 0
 	cdef np.ndarray[DTYPE_INT_t,ndim = 2] out = np.zeros([(max_h//step)*(max_w//grid_dis)+1,3],dtype = DTYPE_INT)
 
 	# for x in range(1,max_w,grid_dis):
@@ -43,9 +43,9 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT
 		# for y in range(1,max_h,step):
 		while y < max_h:
 			current_color = color_classify_c(img[y,x][0], img[y,x][1], img[y,x][2],color,n_color)
-			out[color_count][0] = y
-			out[color_count][1] = x
-			out[color_count][2] = current_color
+			out[color_count, 0] = y
+			out[color_count, 1] = x
+			out[color_count, 2] = current_color
 			img[y,x] = [0,0,255]
 			color_count += 1
 			loop_counter += 1
@@ -78,10 +78,11 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_y_c(np.ndarray[DTYPE_UINT
 	while y < max_h:
 		while x < max_w:
 			current_color = color_classify_c(img[y,x][0], img[y,x][1], img[y,x][2],color,n_color)
-			out[color_count][0] = y
-			out[color_count][1] = x
-			out[color_count][2] = current_color
+			out[color_count, 0] = y
+			out[color_count, 1] = x
+			out[color_count, 2] = current_color
 			img[y,x] = [0,0,255]
+			color_count += 1
 			x += step
 		x = 0
 		loop_counter += 1
@@ -104,6 +105,7 @@ cdef np.ndarray[DTYPE_INT_t, ndim = 2] to_region_c(np.ndarray[DTYPE_INT_t, ndim 
 	cdef int counter = 0
 	cdef int color = -1
 	cdef int grid_line = 0
+	cdef int i
 	cdef np.ndarray[DTYPE_INT_t, ndim = 2] temp = np.zeros([max_size,4], dtype = DTYPE_INT)
 
 	temp[counter,0] = pattern[loop_counter,axis]
