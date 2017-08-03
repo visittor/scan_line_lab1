@@ -27,8 +27,8 @@ class ScanLine(object):
 			raise ValueError("color_list's shape not equal (n ,2 ,3)")
 		self.color_list = colorList
 
-	def scan_image(self, img_hsv):
-		self._scan_output = find_pattern.find_color_pattern_x(img_hsv.copy(), self.color_list, grid_dis = self.grid_dis, step = self.step, co = self.co) if self.scan_axis == 1 else find_pattern.find_color_pattern_y(img_hsv.copy(), self.color_list, grid_dis = self.grid_dis, step = self.step, co = self.co)
+	def scan_image(self, img_hsv, horizon):
+		self._scan_output = find_pattern.find_color_pattern_x(img_hsv.copy(), self.color_list, grid_dis = self.grid_dis, step = self.step, co = self.co, horizon = horizon) if self.scan_axis == 1 else find_pattern.find_color_pattern_y(img_hsv.copy(), self.color_list, grid_dis = self.grid_dis, step = self.step, co = self.co, horizon = horizon)
 
 	def visualize_scan_line(self, img):
 		for i in self._scan_output:
@@ -38,8 +38,8 @@ class ScanLine(object):
 			else:
 				img[i[0], i[1]] = 255
 
-	def find_region(self, img_hsv):
-		self.scan_image(img_hsv)
+	def find_region(self, img_hsv, horizon):
+		self.scan_image(img_hsv, horizon)
 		self._region_output = find_pattern.to_region(self._scan_output, self.scan_axis)
 
 	def visualize_region(self, img):

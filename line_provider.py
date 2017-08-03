@@ -12,82 +12,8 @@ class Line_provider(object):
 
 	def recive_region(self, region):
 		self._region = region
-
-	# def connect_region(self, first, r):
-	# 	if first is None:
-	# 		return None
-	# 	while first < len(self._region_output) and self._region_output[first][2] < self._region_output[r][1] and self._region_output[first][0] + self.grid_dis == self._region_output[r][0]:
-	# 		first += 1
-	# 	if self._region_output[first][0] + self.grid_dis != self._region_output[r][0]:
-	# 		return None
-	# 	if self._region_output[first][1] <= self._region_output[r][2] and self._region_output[first][3] == self._region_output[r][3]:
-	# 		if self._united_region[first][1] == -1:
-	# 			if not self.check_(first, r):
-	# 				self._united_region[first][1] = r
-	# 				self._united_region[r][0] = first
-	# 	first_ = first + 1
-	# 	while first < len(self._region_output) and self._region_output[first_][1] <= self._region_output[r][2]:
-	# 		if self._region_output[first_][0] + self.grid_dis != self._region_output[r][0]:
-	# 			return first
-	# 		if self._region_output[first_][2] >= self._region_output[r][1] and self._region_output[first_][3] == self._region_output[r][3]:
-	# 			if self._united_region[first_][1] == -1 and not self.check_(first_, r):
-	# 				self._united_region[first_][1] = r
-	# 				self._united_region[r][0] = first_
-	# 		else:
-	# 			return first
-	# 		first_ += 1
-	# 	return first
-
-	# def unite_region(self):
-	# 	self._united_region = np.zeros((self._region_output.shape[0],2), dtype = np.int) - 1
-	# 	first = None
-	# 	last = None
-	# 	r_ = None
-	# 	for r in range(len(self._region_output)):
-	# 		if self._region_output[r][3] == 1:
-	# 			continue
-	# 		if r_ is None or self._region_output[r_][0] != self._region_output[r][0]:
-	# 			last = first
-	# 			first = r
-	# 		last = self.connect_region(last, r)
-	# 		r_ = r
-
-	# def visualize_united_region(self, img):
-	# 	for i in range(len(self._united_region)):
-	# 		if self._united_region[i][1] != -1:
-	# 			start = self._region_output[i]
-	# 			stop = self._region_output[self._united_region[i][1]]
-	# 			cv2.line(img,(start[0],start[1]),(stop[0],stop[1]),(0,0,255),2)
-	# 			cv2.line(img,(start[0],start[2]),(stop[0],stop[2]),(0,0,255),2)
-	# 			if self._united_region[i][0] == -1:
-	# 				cv2.line(img,(start[0],start[1]),(start[0],start[2]),(0,0,255),2)
-	# 			if self._united_region[self._united_region[i][1]][1] == -1:
-	# 				cv2.line(img,(stop[0],stop[1]),(stop[0],stop[2]),(0,0,255),2)
-
-	# def link_list_to_list(self):
-	# 	point_array = []
-	# 	for ii in range(len(self._united_region)):
-	# 		temp = np.zeros((0,2), dtype = np.int)
-	# 		if self._united_region[ii][0] == -1:
-	# 			temp = np.append(temp, [[self._region_output[ii][0], (self._region_output[ii][1] + self._region_output[ii][2])/2]], axis = 0)
-	# 			ii_ = self._united_region[ii][1]
-	# 			while ii_ != -1:
-	# 				temp = np.append(temp, [[self._region_output[ii_][0], (self._region_output[ii_][1] + self._region_output[ii_][2])/2 ]], axis = 0)
-	# 				ii_ = self._united_region[ii_][1]
-	# 		if len(temp) > 1:
-	# 			point_array.append((temp, self._region_output[ii][3]))
-	# 	return point_array
-
-	# def to_line_eq(self):
-	# 	point_array = self.link_list_to_list()
-	# 	lines_ = []
-	# 	for p,color in point_array:
-	# 		x = p[:,0]
-	# 		y = p[:,1]
-	# 		A = np.vstack([x, np.ones(len(x))]).T
-	# 		m, c = np.linalg.lstsq(A, y)[0]
-	# 		lines_.append((m,c,x[0],x[-1],color))
-	# 	return lines_
+		self.unite_region()
+		
 	def check_(self, first, r):
 		if first.is_head() == 0:
 			v1 = first.region - first.backward.region
@@ -201,7 +127,7 @@ class Line_provider(object):
 					lines_.pop(ii)
 				else:
 					ii += 1
-			if line[5] > 5:
+			if line[5] > 3:
 				self.lines.append(line)
 
 	def get_lines(self):

@@ -17,7 +17,7 @@ color_list[0,1] = np.array(color_dict["white"][1] , dtype = np.uint8)
 color_list[1,0] = np.array(color_dict["green"][0] , dtype = np.uint8)
 color_list[1,1] = np.array(color_dict["green"][1] , dtype = np.uint8)
 
-sc = ScanLine(color_list = color_list, grid_dis = 20, scan_axis = 1, co = 10)
+sc = ScanLine(color_list = color_list, grid_dis = 25, scan_axis = 1, co = 5)
 # sc = ScanLine(color_list = color_list, grid_dis = 1, scan_axis = 0, step = 20 )
 lp = Line_provider()
 
@@ -50,17 +50,15 @@ while 1 == 1:
 	# 		from_region[i[1]:i[2],i[0]-12:i[0]+12] = [100,100,100]
 	# 	cv2.circle(from_region,(i[0],i[1]),2,(0,0,255),-1)
 	# 	cv2.circle(from_region,(i[0],i[2]),2,(0,0,255),-1)
-	sc.find_region(img_hsv)
+	sc.find_region(img_hsv, 50)
 	sc.clip_region(1)
 	lp.recive_region(sc)
-	lp.unite_region()
 	lines_ = lp.get_lines()
-	lines_2 = lp.to_line_eq()
-	for l in lines_2:
-		y1 = int(l[0]*l[2] + l[1])
-		y2 = int(l[0]*l[3] + l[1])
-		color = (255,100,0) if l[4] == 0 else (0,0,0)
-		cv2.line(img, (int(l[2]), y1), (int(l[3]), y2), color, 5)
+	# for l in lines_2:
+	# 	y1 = int(l[0]*l[2] + l[1])
+	# 	y2 = int(l[0]*l[3] + l[1])
+	# 	color = (255,100,0) if l[4] == 0 else (0,0,0)
+	# 	cv2.line(img, (int(l[2]), y1), (int(l[3]), y2), color, 5)
 	for l in lines_:
 		y1 = int(l[0]*l[2] + l[1])
 		y2 = int(l[0]*l[3] + l[1])
@@ -72,10 +70,9 @@ while 1 == 1:
 	out_img = np.hstack([img, from_region])
 	# print out_img.shape
 	cv2.imshow("img", out_img)
-	cv2.imshow("img_hsv", img_hsv[:, :, 1])
 
 	if is_write:
-			out.write(out_img)
+		out.write(out_img)
 
 	k = cv2.waitKey(10)
 	if k == 27:
