@@ -17,7 +17,8 @@ color_list[0,1] = np.array(color_dict["white"][1] , dtype = np.uint8)
 color_list[1,0] = np.array(color_dict["green"][0] , dtype = np.uint8)
 color_list[1,1] = np.array(color_dict["green"][1] , dtype = np.uint8)
 
-sc = ScanLine(color_list = color_list, grid_dis = 25, scan_axis = 1, co = 5)
+sc = ScanLine(color_list = color_list, grid_dis = 30, scan_axis = 1, co = 2)
+sc2 = ScanLine(color_list = color_list, grid_dis = 15, scan_axis = 1, co = 10)
 # sc = ScanLine(color_list = color_list, grid_dis = 1, scan_axis = 0, step = 20 )
 lp = Line_provider()
 
@@ -50,10 +51,17 @@ while 1 == 1:
 	# 		from_region[i[1]:i[2],i[0]-12:i[0]+12] = [100,100,100]
 	# 	cv2.circle(from_region,(i[0],i[1]),2,(0,0,255),-1)
 	# 	cv2.circle(from_region,(i[0],i[2]),2,(0,0,255),-1)
-	sc.find_region(img_hsv, 50)
+	e1 = cv2.getTickCount()
+	sc.find_region(img_hsv, horizon = 100)
+	sc2.find_region(img_hsv, horizon = 50, end_scan = 150)
 	sc.clip_region(1)
+	sc2.clip_region(1)
 	lp.recive_region(sc)
+	lp.append(sc2)
 	lines_ = lp.get_lines()
+	e2 = cv2.getTickCount()
+	time = (e2 - e1)/ cv2.getTickFrequency()
+	cv2.putText(from_region,str(1/time),(0,15), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255),1,cv2.LINE_AA)
 	# for l in lines_2:
 	# 	y1 = int(l[0]*l[2] + l[1])
 	# 	y2 = int(l[0]*l[3] + l[1])
@@ -65,10 +73,9 @@ while 1 == 1:
 		color = (0,100,255) if l[4] == 0 else (0,0,0)
 		cv2.line(img, (int(l[2]), y1), (int(l[3]), y2), color, 3)
 	sc.visualize_region(from_region)
+	sc2.visualize_region(from_region)
 	lp.visualize_united_region(from_region)
-	# sc.visualize_scan_line(from_region)
 	out_img = np.hstack([img, from_region])
-	# print out_img.shape
 	cv2.imshow("img", out_img)
 
 	if is_write:

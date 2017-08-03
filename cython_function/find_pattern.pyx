@@ -28,9 +28,10 @@ cdef unsigned int color_classify_c(int val1, int val2, int val3,np.ndarray[DTYPE
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int grid_dis, int step, int co, int horizon):
+cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int grid_dis, int step, int co, int horizon, int end_scan):
 	cdef int max_w = img.shape[1]
-	cdef int max_h = img.shape[0]
+	# cdef int max_h = img.shape[0]
+	cdef int max_h = end_scan
 	cdef int n_color = color.shape[0]
 	cdef unsigned int x = 0,y = horizon, y_ 
 	cdef int current_color = -1, previous_color = -1
@@ -61,19 +62,22 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT
 		x += grid_dis
 	return out
 
-def find_color_pattern_x(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim=3] color, int grid_dis = 50, int step = 1, int co = 1080, horizon = 0):
+def find_color_pattern_x(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim=3] color, int grid_dis = 50, int step = 1, int co = 1080, horizon = 0, end_scan = -1):
 	if color.shape[1] != 2:
 		raise ValueError("Wrong format color array.Color array must have shape (n_shape,2,3)")
 	elif color.shape[2] != 3:
 		raise ValueError("must be 3 channels color")
-	return find_color_pattern_x_c(img,color,grid_dis,step,co,horizon)
+	if end_scan == -1:
+		end_scan = img.shape[0]
+	return find_color_pattern_x_c(img,color,grid_dis,step,co,horizon,end_scan)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_y_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int grid_dis, int step, int co, int horizon):
+cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_y_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int grid_dis, int step, int co, int horizon, int end_scan):
 	cdef int max_w = img.shape[1]
-	cdef int max_h = img.shape[0]
+	# cdef int max_h = img.shape[0]
+	cdef int max_h = end_scan
 	cdef int n_color = color.shape[0]
 	cdef int x = 0,y = horizon,x_
 	cdef int current_color = -1, previous_color = -1
@@ -100,12 +104,14 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_y_c(np.ndarray[DTYPE_UINT
 		y += grid_dis + loop_counter//co
 	return out
 
-def find_color_pattern_y(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int grid_dis = 50, int step = 1, int co =  1080, horizon = 0):
+def find_color_pattern_y(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int grid_dis = 50, int step = 1, int co =  1080, horizon = 0, end_scan = -1):
 	if color.shape[1] != 2:
 		raise ValueError("Wrong format color array.Color array must have shape (n_shape,2,3)")
 	elif color.shape[2] != 3:
 		raise ValueError("must be 3 channels color")
-	return find_color_pattern_y_c(img,color,grid_dis,step,co,horizon)
+	if end_scan == -1:
+		end_scan = img.shape[0]
+	return find_color_pattern_y_c(img,color,grid_dis,step,co,horizon,end_scan)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

@@ -13,7 +13,13 @@ class Line_provider(object):
 	def recive_region(self, region):
 		self._region = region
 		self.unite_region()
-		
+
+	def append(self, region):
+		united_region_ = self._united_region 
+		self._region = region
+		self.unite_region()
+		self._united_region.extend(united_region_)
+
 	def check_(self, first, r):
 		if first.is_head() == 0:
 			v1 = first.region - first.backward.region
