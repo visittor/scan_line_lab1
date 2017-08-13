@@ -1,3 +1,4 @@
+from scanline import ScanLine
 import numpy as np
 import cv2
 from util import *
@@ -11,8 +12,11 @@ class Line_provider(object):
 		pass
 
 	def recive_region(self, region):
-		self._region = region
-		self.unite_region()
+		if region.__class__ == ScanLine:
+			self._region = region
+			self.unite_region()
+		else:
+			raise ValueError("region is not class ScanLine.region")
 
 	def append(self, region):
 		united_region_ = self._united_region 
@@ -136,9 +140,46 @@ class Line_provider(object):
 			if line[5] > 3:
 				self.lines.append(line)
 
+	def make_line(self):
+		self.filter_line()
+
 	def get_lines(self):
 		self.filter_line()
 		return self.lines
+
+	def __getitem__(self, index):
+		return self.Line(self.lines[index])
+
+	class Line(object):
+
+		def __init__(self, line_array):
+			self._line_array = line_array
+
+		@property
+		def m(self):
+			return self._line_array[0]
+
+		@property
+		def c(self):
+			return self._line_array[1]
+
+		@property
+		def start(self):
+			y = self._line_array[0]*self._line_array[2] + self._line_array[1]
+			return (self._line_array[2], y)
+
+		@property
+		def stop(self):
+			y = self._line_array[0]*self._line_array[3] + self._line_array[1]
+			return (self._line_array[3], y)
+
+		@property
+		def color(self):
+			return self._line_array[4]
+
+		@property
+		def vote(self):
+			return self._line_array[5]
 
 	class linklist(object):
 		def __init__(self, region):
@@ -176,3 +217,8 @@ class Line_provider(object):
 		@property
 		def region(self):
 			return self._region
+
+	@property
+	def lenght(self):
+		return len(self.lines)
+

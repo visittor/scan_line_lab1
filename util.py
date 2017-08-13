@@ -9,7 +9,7 @@ def angle_between(vec1, vec2):
 	u_vec2 = unit_vector(vec2)
 	return np.arccos( np.clip(np.dot(u_vec1, u_vec2), -1, 1))
 
-def check_(self,first,r):
+def check_(self, first, r):
 		last_index = self._united_region[first][0]
 		next_index = r
 		if last_index != -1:
@@ -34,3 +34,8 @@ def frechet_distance(m1, m2):
 		if min_dis > max_dis :
 			max_dis = min_dis
 	return max_dis
+
+def find_line_intersection(m1, c1, m2, c2):
+	a = np.array([ [m1, -1], [m2, -1] ])
+	b = np.array([ -c1, -c2])
+	return np.linalg.solve(a,b)

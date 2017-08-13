@@ -161,3 +161,61 @@ def to_region(np.ndarray[DTYPE_INT_t, ndim = 2] pattern, int axis):
 		raise ValueError("Axis must not exceed 1")
 
 	return to_region_c(pattern, axis)
+
+cdef np.ndarray[DTYPE_INT_t, ndim = 1] find_color_circular_pattern_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int x, int y, int true_color, int square_size,int step):
+	cdef int n_color = color.shape[0] 
+	cdef int i,j,counter = 0,perimeter = 0
+	cdef int max_w = img.shape[1]
+	cdef int max_h = img.shape[0]
+	i = x - square_size//2 if x > square_size//2 else 0
+	j = y - square_size//2 if y > square_size//2 else 0
+	perimeter += (x - i) + 1 + (y - j) + 1
+	perimeter += square_size//2 if max_w - x > square_size//2 else max_w - x
+	perimeter += square_size//2 if max_h - y > square_size//2 else max_h - y
+	perimeter = (perimeter*2) - 4
+	cdef np.ndarray[DTYPE_INT_t, ndim = 1] out = np.zeros([perimeter], dtype = DTYPE_INT)
+
+	while i < x + square_size//2 and i < max_w - 1:
+		if color_classify_c(img[j,i][0], img[j,i][1], img[j,i][2],color,n_color) == true_color:
+			out[counter] = 1
+		else:
+			out[counter] = 0
+		counter += 1
+		i += step
+
+	while j < y + square_size//2 and j < max_h - 1:
+		if color_classify_c(img[j,i][0], img[j,i][1], img[j,i][2],color,n_color) == true_color:
+			out[counter] = 1
+		else:
+			out[counter] = 0
+		counter += 1
+		j += step
+
+	while i > x - square_size//2 and i > 0:
+		if color_classify_c(img[j,i,0], img[j,i,1], img[j,i,2],color,n_color) == true_color:
+			out[counter] = 1
+		else:
+			out[counter] = 0
+		counter += 1
+		i -= step
+
+	while j > y - square_size//2 and j > 0:
+		if color_classify_c(img[j,i][0], img[j,i][1], img[j,i][2],color,n_color) == true_color:
+			out[counter] = 1
+		else:
+			print "perimeter :", perimeter, "counter :", counter
+			out[counter] = 0
+		counter += 1
+		j -= step
+
+	return out
+
+def find_color_circular_pattern(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int x, int y, int true_color, int square_size = 25, int step = 1):
+	if color.shape[1] != 2:
+		raise ValueError("Wrong format color array.Color array must have shape (n_shape,2,3)")
+	elif color.shape[2] != 3:
+		raise ValueError("must be 3 channels color")
+	elif true_color < 0:
+		raise ValueError("true_color's value must be more than 0")
+
+	return find_color_circular_pattern_c(img, color, x, y, true_color, square_size, step)
