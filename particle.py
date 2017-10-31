@@ -31,9 +31,9 @@ class Particle_Flock(object):
 	def attached_cost_function(self, cost_function):
 		self._cost_function = cost_function
 
-	def resample(self, radius, spare_percent = 10):
-		spare_percent = spare_percent%100
-		spare = (self._n_particle*spare_percent)/100
+	def resample(self, radius, spare_percentage = 10):
+		spare_percentage = spare_percentage%100
+		spare = (self._n_particle*spare_percentage)/100
 		if len(radius) != self._dimention:
 			raise ValueError("radius must be array like with dimention (dimention, 1)")
 		distibution = [0]*self._n_particle
@@ -46,9 +46,7 @@ class Particle_Flock(object):
 				if a >= random_num :
 					distibution[i] += 1
 					break
-		np.random.randint(0, high=self._n_particle, size=spare) # spare particle will randomly spawn without consider about weight
-		for i in range(spare):
-			distibution[i] += 1
+
 		temp = np.zeros([self._n_particle, self._dimention+1], dtype = np.float)
 		index = 0
 		for n,p in zip(distibution, self._flock):
@@ -58,6 +56,12 @@ class Particle_Flock(object):
 				delta = np.hstack([delta, np.array([0])]) # make delta's dimention equal to temp[index]'s dimention
 				temp[index] = p + delta
 				index += 1
+
+		spare_pos = np.random.random_sample((spare, self._dimention+1))# spare particle will randomly spawn without consider about weight
+		bound = np.vstack([self._boundary,np.array([0,0])])
+		spare_pos = (bound[:,1] - bound[:,0])*spare_pos[:] + bound[:,0]
+		temp[-spare:] = spare_pos[:]
+		temp[:,-1] = 0
 		self._flock = temp
 
 	def move_particles(self, translation):
@@ -110,17 +114,21 @@ class Map1D(object):
 		self._pos = pos
 		self.initial_mountain()
 
-	def initial_mountain(self, step = 8):
+	def initial_mountain(self, step = 30):
 		np.random.seed()
-		self._mountain_hieght = np.random.randint(0, high = self._max_h/2,  size=self._max_w)
+		rand_num = np.random.randint(0, high = self._max_h/2,  size=(self._max_w/step)+1)
+		for i in range(0,self._max_w - step, step):
+			for j in range(step):
+				self._mountain_hieght[i+j] = ((step-j)*rand_num[(i/step)+1] + j*rand_num[(i/step)])/step
 
 	def measure_hieght(self, position):
-		return self._mountain_hieght[position]
+		return self._mountain_hieght[int(position)]
 
 	def cost_function(self, array):
 		if array[0] >= self._max_w or array[0] < 0:
 			return 0
-		return np.exp(-(self._mountain_hieght[int(array[0])] - self._mountain_hieght[self._pos])**2)
+		# print self.measure_hieght(array[0]) - self.measure_hieght(self._pos)
+		return np.exp(-(self.measure_hieght(array[0]) - self.measure_hieght(self._pos))**2)
 
 	def visualize(self,img):
 		for m in range(self._max_w):
@@ -131,17 +139,31 @@ class Map1D(object):
 
 def visualize_particles(img, flock):
 	average = flock.average
-	max_ = flock.max_weight
+	cv2.cvtColor(img, cv2.COLOR_BGR2HSV, img)
+	max_ = flock.max_weight if flock.max_weight > 0.0 else 1.0
 	for i in flock:
-		size = 2 if i.weight < max_ else 2
-		cv2.circle(img, (int(i.position[0]), 150), size, [100,255,255], -1)
+		try:
+			color = int((i.weight/max_)*150)
+		except Exception as e:
+			color = 1
+		cv2.circle(img, (int(i.position[0]), 150), 2, [color,255,255], -1)
+	cv2.cvtColor(img, cv2.COLOR_HSV2BGR, img)
 	cv2.circle(img, (int(average[0]), 200), 10, [100,0,255], -1)
 
 def visualize_airplane(img, position):
-	cv2.circle(img, (position, 100), 10, [255,100,0], -1)
+	cv2.circle(img, (int(position), 100), 10, [255,100,0], -1)
+
+def create_color_bar(img):
+	h,w,_ = img.shape
+	cv2.cvtColor(img, cv2.COLOR_BGR2HSV, img)
+	for i in range(0,w):
+		color = int((float(i)/float(w))*150)
+		img[:25, i, :] = [color, 255, 255]
+	cv2.cvtColor(img, cv2.COLOR_HSV2BGR, img)
 
 if __name__ == "__main__":
 	img = np.zeros([640, 640,3], dtype = np.uint8)
+	create_color_bar(img)
 	Map = Map1D()
 	Map.visualize(img)
 	flock = Particle_Flock(n_particle = 200, dimention = 1, boundary = np.array([[0,640]]), cost_function = Map.cost_function)
@@ -154,6 +176,7 @@ if __name__ == "__main__":
 	random.seed()
 	while 1==1:
 		img_ = img.copy()
+		flock.calculate_cost()
 		Map.visualize(img_)
 		visualize_particles(img_, flock)
 		visualize_airplane(img_, character)
@@ -162,10 +185,9 @@ if __name__ == "__main__":
 		if cv2.waitKey(0)&0xFF == 27:
 			break
 
-		flock.calculate_cost()
-		flock.resample(radius = [20], spare_percent = 10)
+		flock.resample(radius = [15], spare_percentage = 5)
 		img_ = img.copy()
-
+		flock.calculate_cost()
 		Map.visualize(img_)
 		visualize_particles(img_, flock)
 		visualize_airplane(img_, character)
@@ -175,10 +197,15 @@ if __name__ == "__main__":
 			break
 
 		move = np.random.randint(-40, 40)
-		if character + move >= 640 or character+move < 0:
+		scale = 0.15*move if move > 0 else -0.1*move
+		scale = 0.001 if scale == 0 else scale
+		real_move = np.random.normal(move, scale)
+		if character + real_move >= 640 or character+real_move < 0:
 			move = 0
-		character += move
+			real_move = 0
+		character += real_move
 		flock.move_particles([move])
+		flock.calculate_cost()
 		Map.set_current_pos(character)
 	
 	cv2.destroyAllWindows()

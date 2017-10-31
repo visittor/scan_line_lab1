@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 
-cap = cv2.VideoCapture('sample_with_robot_3.avi')
+# cap = cv2.VideoCapture('sample_with_robot_3.avi')
+cap = cv2.VideoCapture(0)
 cv2.namedWindow('set')
 def nothing(somethings):
     pass
