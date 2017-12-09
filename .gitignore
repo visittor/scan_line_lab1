@@ -6,3 +6,9 @@
 *.o
 *.def
 *.html
+*.rar
+*.sublime-project
+*.sublime-workspace
+TO_P_ONG/cython_function/find_pattern.pyx
+TO_P_ONG/cython_function/linklist.pxd
+TO_P_ONG/cython_function/linklist.pyx

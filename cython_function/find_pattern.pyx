@@ -12,7 +12,6 @@ ctypedef np.uint8_t DTYPE_UINT8_t
 DTYPE_FLOAT = np.float 
 ctypedef np.float_t DTYPE_FLOAT_t
 
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -28,6 +27,7 @@ cdef unsigned int color_classify_c(int val1, int val2, int val3,np.ndarray[DTYPE
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
+@cython.cdivision(True)
 cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT8_t,ndim = 3] img, np.ndarray[DTYPE_UINT8_t,ndim = 3] color, int grid_dis, int step, int co, int horizon, int end_scan):
 	cdef int max_w = img.shape[1]
 	# cdef int max_h = img.shape[0]
@@ -38,14 +38,16 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_x_c(np.ndarray[DTYPE_UINT
 	cdef unsigned int loop_counter = 0
 	cdef unsigned int color_count = 0
 	cdef np.ndarray[DTYPE_INT_t,ndim = 2] temp = np.zeros([(((max_h-y)//step)+1)*((max_w//grid_dis)+1)+1,3],dtype = DTYPE_INT)
+	if co == 0:
+		co = 1
 	while x < max_w:
 		while y < max_h:
-			current_color = color_classify_c(img[y,x][0], img[y,x][1], img[y,x][2],color,n_color)
+			current_color = color_classify_c(img[y,x,0], img[y,x,1], img[y,x,2],color,n_color)
 			y_ = y
 			if previous_color != current_color:
 				previous_color = current_color
 				while current_color == previous_color and y_>horizon:
-					previous_color = color_classify_c(img[y_,x][0], img[y_,x][1], img[y_,x][2],color,n_color)
+					previous_color = color_classify_c(img[y_,x,0], img[y_,x,1], img[y_,x,2],color,n_color)
 					y_ -= 1
 			temp[color_count, 0] = y_
 			temp[color_count, 1] = x
@@ -83,13 +85,13 @@ cdef np.ndarray[DTYPE_INT_t,ndim=3] find_color_pattern_y_c(np.ndarray[DTYPE_UINT
 	cdef np.ndarray[DTYPE_INT_t,ndim = 2] temp = np.zeros([(((max_h-horizon)//grid_dis)+1)*((max_w//step)+1)+1,3],dtype = DTYPE_INT)
 	while y < max_h:
 		while x < max_w:
-			current_color = color_classify_c(img[y,x][0], img[y,x][1], img[y,x][2],color,n_color)
+			current_color = color_classify_c(img[y,x,0], img[y,x,1], img[y,x,2],color,n_color)
 			previous_color = current_color
 			x_ = x
 			if previous_color != current_color:
 				previous_color = current_color
 				while current_color == previous_color and x_>0:
-					previous_color = color_classify_c(img[y,x_][0], img[y,x_][1], img[y,x_][2],color,n_color)
+					previous_color = color_classify_c(img[y,x_,0], img[y,x_,1], img[y,x_,2],color,n_color)
 					x_ -= 1
 			temp[color_count, 0] = y
 			temp[color_count, 1] = x_
@@ -129,6 +131,7 @@ cdef np.ndarray[DTYPE_INT_t, ndim = 2] to_region_c(np.ndarray[DTYPE_INT_t, ndim 
 	temp[counter, 1] = pattern[loop_counter, (axis+1)%2]
 	temp[counter, 3] = pattern[loop_counter, 2]
 	color = pattern[loop_counter,2]
+	loop_counter += 1
 	while loop_counter < max_size:
 		if pattern[loop_counter, axis] != temp[counter, 0]:
 			temp[counter, 2] = pattern[loop_counter - 1, (axis+1)%2]

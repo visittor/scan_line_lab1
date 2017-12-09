@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # cap = cv2.VideoCapture('sample_with_robot_3.avi')
-cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
 cv2.namedWindow('set')
 def nothing(somethings):
     pass
@@ -14,12 +14,15 @@ cv2.createTrackbar('R1', 'set', 0, 255, nothing)
 cv2.createTrackbar('R2', 'set', 0, 255, nothing)
 
 is_puase = 0
+img = cv2.imread("pass_4.jpg")
+img = cv2.resize(img, None, fx = 0.25, fy = 0.25)
 while True:
     if not is_puase:
-        ret,frame = cap.read()
-        if not ret:
-            cap.set( 2, 0)
-            ret,frame = cap.read()
+        # ret,frame = cap.read()
+        # if not ret:
+        #     cap.set( 2, 0)
+        #     ret,frame = cap.read()
+        frame = img.copy()
     # frame = cv2.flip(frame,0)
         frame = cv2.GaussianBlur(frame,(3,3),0)
     tran_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)

@@ -33,7 +33,10 @@ class ScanLine(object):
 
 	def scan_image(self, img_hsv, horizon, end_scan):
 		self._scan_output = find_pattern.find_color_pattern_x(img_hsv.copy(), self.color_list, grid_dis = self.grid_dis, step = self.step, co = self.co, horizon = horizon, end_scan = end_scan) if self.scan_axis == 1 else find_pattern.find_color_pattern_y(img_hsv.copy(), self.color_list, grid_dis = self.grid_dis, step = self.step, co = self.co, horizon = horizon, end_scan = end_scan)
-
+		# print self._scan_output.shape
+		y = 0
+		# for i in range(len(self._scan_output)):
+		# 	y += 1
 	def visualize_scan_line(self, img):
 		for i in self._scan_output:
 			if img.shape[2] == 3 :
@@ -96,39 +99,14 @@ class ScanLine(object):
 			ii += self.grid_dis
 		return boundary
 
+	def get_regions(self):
+		return [self.region(self._region_output[i], self.grid_dis) for i in range(len(self._region_output))]
+
+	def get_numpy_regions(self):
+		return self._region_output.copy(), self.grid_dis
+
 	def __getitem__(self, index):
-		return self.region(self._region_output[index], self.grid_dis)
-
-	class region(object):
-		def __init__(self, region, grid_dis):
-			self.region = region
-			self.grid_dis = grid_dis
-		@property
-		def column(self):
-			return self.region[0]
-
-		@property
-		def next_column(self):
-			return self.region[0] + self.grid_dis
-
-		@property
-		def start(self):
-			return self.region[1]
-
-		@property
-		def stop(self):
-			return self.region[2]
-
-		@property
-		def middle(self):
-			return (self.region[1] + self.region[2])/2
-
-		@property
-		def color(self):
-			return self.region[3]
-
-		def __sub__(self, b):
-			return self.region - b.region
+		return region(self._region_output[index], self.grid_dis)
 
 	@property
 	def info(self):
@@ -138,3 +116,36 @@ class ScanLine(object):
 	@property
 	def lenght(self):
 		return len(self._region_output)
+
+class region(object):
+	def __init__(self, region, grid_dis):
+		self.region = region
+		self.grid_dis = grid_dis
+	@property
+	def column(self):
+		return self.region[0]
+
+	@property
+	def next_column(self):
+		return self.region[0] + self.grid_dis
+
+	@property
+	def start(self):
+		return self.region[1]
+
+	@property
+	def stop(self):
+		return self.region[2]
+
+	@property
+	def middle(self):
+		return (self.region[1] + self.region[2])/2
+
+	@property
+	def color(self):
+		return self.region[3]
+
+	def __sub__(self, b):
+		a = self.region[:3] - b.region[:3]
+		a[1] = (a[1] + a[2])/2
+		return a[:2]
