@@ -26,3 +26,8 @@ def find_line_intersection(m1, c1, m2, c2):
 	a = np.array([ [m1, -1], [m2, -1] ])
 	b = np.array([ -c1, -c2])
 	return np.linalg.solve(a,b)
+
+def classify_color(val, max_, min_):
+	if (min_ < val).all() and (max_ > val).all():
+		return 1
+	return 0

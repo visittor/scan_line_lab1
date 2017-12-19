@@ -1,6 +1,7 @@
 import cv2
 import numpy as np 
 import sys
+import time
 
 def recieve_video_cam(id):
 	cap = cv2.VideoCapture(id)
@@ -58,7 +59,7 @@ if __name__ == '__main__':
 			a = 'writing...' if is_write == 1 else "puase..."
 			print a
 		elif k&0xFF == ord("c"):
-			cv2.imwrite("save__.jpg",img)
+			cv2.imwrite("goal_sample/"+str(time.time())+".jpg",img)
 		elif k&0xFF == ord("p"):
 			is_puase = 0 if is_puase == 1 else 1
 
