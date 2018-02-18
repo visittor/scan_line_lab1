@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
 
-file_name = "dowaina_chattarin2.avi"
+file_name = "leipzig_012.avi"
 cap = cv2.VideoCapture(file_name)
-cap = cv2.VideoCapture(1)
+# cap = cv2.VideoCapture(1)
 cv2.namedWindow('set')
 def nothing(somethings):
 	pass
@@ -20,6 +20,7 @@ is_puase = 0
 while True:
 	if not is_puase:
 		ret,frame = cap.read()
+		print frame
 		if not ret:
 		    cap.set( 2, 0)
 		    ret,frame = cap.read()

@@ -3,11 +3,10 @@ from region_reciever import Region_reciver
 import numpy as np
 import cv2
 from util import *
+import cyutility
+import math
 
 class Line_provider(Region_reciver):
-	_united_region = []
-	_region = None
-	lines = []
 
 	def __init__(self, angle_threshold = 0.51, size_ratio=1.0):
 		super( Line_provider, self).__init__()
@@ -20,21 +19,13 @@ class Line_provider(Region_reciver):
 		self.lines = []
 		self.crossing = []
 
-	def receive_region(self, region, connected_color = 0):
-		if region.__class__ == ScanLine:
-			self._region = region
-			self._united_region, self.nodes = super(Line_provider, self).unite_region_and_find_node(self._region, connected_color)
-		else:
-			raise ValueError("region is not class ScanLine.region")
-
-	def append(self, region, connected_color = 0):
-		united_region_ = self._united_region 
+	def receive_region(self, region, connected_color = 0, axis = 1):
 		self._region = region
-		self.unite_region(connected_color)
-		self._united_region.extend(united_region_)
+		self.nodes = super(Line_provider, self).find_node(self._region, connected_color, axis)
+		# self._united_region = super(Line_provider, self).unite_region(self._region, connected_color, axis)
 
 	def visualize_united_region(self, img, axis = 1):
-		super( Line_provider, self).visualize_united_region(img, self._united_region, axis)
+		super( Line_provider, self).visualize_node(img, self.nodes, axis)
 
 	def visualize_node(self, img, axis = 1):
 		super( Line_provider, self).visualize_node(img, self.nodes, axis)
@@ -44,6 +35,8 @@ class Line_provider(Region_reciver):
 
 	def node_to_list(self, nodes):
 		# visited_nodes = np.zeros(len(nodes), dtype = np.uint8)
+		# for i in nodes:
+		# 	print i.id
 		visited_nodes = []
 		line_array = []
 		point_array = []
@@ -78,62 +71,55 @@ class Line_provider(Region_reciver):
 			if next_node.id in visited_nodes:
 				continue
 			line_array.append([np.zeros((0,2), dtype = np.int), node.data.color])
-			# temp = np.zeros((0,2), dtype = np.int)
 			while next_node.id not in visited_nodes:
 				if next_node.number_of_connected_node == 1:
 					point_array.append(next_node)
 					visited_nodes.append(next_node.id)
-					# print node.id,"Found node 1"
 					break
 				elif next_node.number_of_connected_node == 2:
 					if self.check_node_angle(next_node):
-						# print node.id,"Found node 2"
 						point_array.append(next_node)
 						visited_nodes.append(next_node.id)
 						self.search_node(next_node, visited_nodes, line_array, point_array)
 						break
 					else:
-						# print "Found line"
-						line_array[-1][0] = np.append(line_array[-1][0], [[next_node.data.column, next_node.data.middle]], axis = 0)
-						# print node.id, "...", next_node.id, line_array[-1]
-						# temp = np.append(temp, [[next_node.data.column, next_node.data.middle]], axis = 0)
-						# print node.id, "...", id(temp)
+						line_array[-1][0] = np.append(line_array[-1][0], [next_node.data.middle], axis = 0)
 						visited_nodes.append(next_node.id)
 						next_node = next_node.connected_node[0] if next_node.connected_node[0].id not in visited_nodes else next_node.connected_node[1]
 				else:
 					point_array.append(next_node)
 					visited_nodes.append(next_node.id)
 					self.search_node(next_node, visited_nodes, line_array, point_array)
-					# print node.id,"Found node 3"
 					break
-			# if temp.shape[0] > 1:
-			# 	print "temp"
-			# 	line_array.append((temp, next_node.data.color))
-		# print "finish one function"
 
 	def check_node_angle(self, node):
 		v1 = node.connected_node[0].data - node.data
 		v2 = node.connected_node[1].data - node.data
 		ang = angle_between(v1[:2], v2[:2])
-		# print ang
 		if ang < 3.14 - self.angle_threshold :
 			return 1
 		return 0
 
-	def to_line_eq(self, axis = 1):
-		# point_array = self.link_list_to_list()
+	def to_line_eq(self):
 		crossing,point_array = self.node_to_list(self.nodes)
-		lines_ = []
+		# lines_ = []
+		lines_ = np.zeros([len(point_array),4], dtype=np.float)
+		i = 0
 		for p,color in point_array:
-			x = p[:,0] if axis == 1 else p[:,1]
-			y = p[:,1] if axis == 1 else p[:,0]
+			x = p[:,0]
+			y = p[:,1]
 			A = np.vstack([x, np.ones(len(x))]).T
 			try:
 				m, c = np.linalg.lstsq(A, y)[0]
-				lines_.append([m,c,x[0],x[-1],color,p.shape[0]])
+				# lines_.append([m,c,x[0],x[-1],color,p.shape[0]])
+				lines_[i,0] = m
+				lines_[i,1] = c
+				lines_[i,2] = x[0]
+				lines_[i,3] = x[-1]
+				i += 1
 			except ValueError:
 				pass
-		return lines_, crossing
+		return lines_[:i], crossing
 
 	def compare_lines(self, l1, l2, frechet_d_thr = 15):
 		m1 = [np.array([ 0, l1[1] ]), np.array([100, 100*l1[0]+l1[1] ]) ]
@@ -150,40 +136,77 @@ class Line_provider(Region_reciver):
 		l1[3] = l1[3] if l1[3] > l2[3] else l2[3]
 		l1[5] += l2[5]
 
-	def filter_line(self, axis = 1, frechet_d_thr = 15):
-		lines_,self.crossing = self.to_line_eq( axis = axis)
-		self.lines = []
-		while len(lines_) > 0:
-			line = lines_.pop(0)
-			ii = 0
-			while ii < len(lines_):
-				if self.compare_lines(line, lines_[ii], frechet_d_thr = frechet_d_thr):
-					self.merge_lines(line, lines_[ii])
-					lines_.pop(ii)
-				else:
-					ii += 1
-			if line[5] > 3:
-				self.lines.append(line)
+	def filter_line(self, frechet_d_thr = 15):
+		lines_,self.crossing = self.to_line_eq()
+		# self.lines = []
+		# while len(lines_) > 0:
+		# 	line = lines_.pop(0)
+		# 	ii = 0
+		# 	while ii < len(lines_):
+		# 		if self.compare_lines(line, lines_[ii], frechet_d_thr = frechet_d_thr):
+		# 			self.merge_lines(line, lines_[ii])
+		# 			lines_.pop(ii)
+		# 		else:
+		# 			ii += 1
+		# 	if line[5] > 3:
+		# 		self.lines.append(line)
+		# self.lines = lines_
+		# print lines_
+		self.lines = cyutility.PyGroupingLineMC(lines_.astype(np.float), float(frechet_d_thr))
 
-	def make_line(self, axis = 1, frechet_d_thr = 15):
-		self.filter_line(axis = axis, frechet_d_thr = frechet_d_thr)
+	def make_line(self, frechet_d_thr = 15):
+		self.filter_line( frechet_d_thr = frechet_d_thr)
 
-	def get_lines_array(self, axis = 1, frechet_d_thr = 15):
-		self.filter_line(axis = axis, frechet_d_thr = frechet_d_thr)
+	def get_lines_array(self, frechet_d_thr = 15):
+		self.filter_line( frechet_d_thr = frechet_d_thr)
 		return self.lines
 
 	def get_lines(self, axis = 1, frechet_distance = 15):
-		self.filter_line(axis=axis, frechet_d_thr= frechet_distance)
-		return [Line(l) for l in self.lines]
+		self.filter_line( frechet_d_thr= frechet_distance)
+		return [LineMC(l) for l in self.lines]
 
 	@property
 	def lenght(self):
 		return len(self.lines)
 		
 	def __getitem__(self, index):
-		return Line(self.lines[index])
+		return LineMC(self.lines[index])
 
-class Line(object):
+class VerticleLine_provider(object):
+
+	def __init__(self):
+		self.verlineEqs = np.zeros((0,5), np.float)
+		self.verlineList = []
+
+	def scanImage(self, imgHSV, horizon = 0):
+		if horizon != 0:
+			skyHSV = imgHSV[:horizon, :, 2]
+			skyHSV = np.float64(skyHSV) / 255.0
+			sobel = np.absolute(cv2.Sobel(skyHSV, -1, 1, 0, scale=255)).astype(np.uint8)
+			cv2.threshold(sobel, 127, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU, sobel)
+			cv2.imshow("sobel", sobel)
+			verLines = cv2.HoughLinesP(sobel,1,np.pi/2.0,100, horizon/50, 10)
+			if verLines is not None:
+				verLines = verLines.reshape(-1,4).astype(int)
+				self.verlineEqs= np.zeros((len(verLines),5), np.float)
+				cyutility.PyfromPoints2LineEq(verLines[:,1::-1], verLines[:,3:1:-1], self.verlineEqs, mode = 0)
+				self.verlineEqs = cyutility.PyGroupingLineABC(self.verlineEqs, 20)
+				self.__create_verlineList()
+				return
+		self.verlineEqs = np.zeros((0,5), np.float)
+		self.verlineList = []
+
+	def __create_verlineList(self):
+		self.verlineList = [ LineABC(l) for l in self.verlineEqs if np.absolute(l[0]) < 2*np.absolute(l[1])]
+
+	def get_verticalLine(self):
+		return self.verlineList
+
+	def scan_and_getLine(self, imgHSV, horizon = 0):
+		self.scanImage(imgHSV, horizon)
+		return self.verlineList
+
+class LineMC(object):
 
 	def __init__(self, line_array):
 		self._line_array = line_array
@@ -214,10 +237,57 @@ class Line(object):
 	def stopX(self):
 		return self._line_array[3]
 
-	@property
-	def color(self):
-		return self._line_array[4]
+	# @property
+	# def color(self):
+	# 	return self._line_array[4]
+
+	# @property
+	# def vote(self):
+	# 	return self._line_array[5]
+
+class LineABC(object):
+
+	def __init__(self, line_array):
+		self._line_array = line_array
 
 	@property
-	def vote(self):
-		return self._line_array[5]
+	def A(self):
+		return self._line_array[0]
+
+	@property
+	def B(self):
+		return self._line_array[1]
+
+	@property
+	def C(self):
+		return self._line_array[2]
+
+	@property
+	def start(self):
+		if self._line_array[1] != 0:
+			y = (-self._line_array[2] - (self._line_array[0]*self._line_array[3])) / self._line_array[1]
+			y = int(y)
+			return np.array([ self._line_array[3], y ])
+		else:
+			x = (-self._line_array[2] - (self._line_array[1]*self._line_array[3])) / self._line_array[0]
+			x = int(x)
+			return np.array([ x,self._line_array[3] ])
+
+	@property
+	def stop(self):
+		if self._line_array[1] != 0:
+			y = (-self._line_array[2] - (self._line_array[0]*self._line_array[4])) / self._line_array[1]
+			y = int(y)
+			return np.array([self._line_array[4], y])
+		else:
+			x = (-self._line_array[2] - (self._line_array[1]*self._line_array[4])) / self._line_array[0]
+			x = int(x)
+			return np.array([ x,self._line_array[4] ])
+
+	@property
+	def startX(self):
+		return self._line_array[3]
+
+	@property
+	def stopY(self):
+		return self._line_array[4]

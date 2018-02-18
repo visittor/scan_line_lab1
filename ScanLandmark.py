@@ -1,11 +1,10 @@
 import numpy as np
 import cv2
 from scanline import ScanLine,scanline_polygon
-from line_provider import Line_provider
+from line_provider import Line_provider, VerticleLine_provider
 from Goal_provider import Goal_provider
 from cross_provider import Cross_provider
 from Robot_provider import Robot_provider
-import find_pattern
 import time
 
 class ScanLandmark(object):
@@ -28,18 +27,18 @@ class ScanLandmark(object):
 		goal_angleThreshold = kwarg.get("goal_angleThreshold", 0.4)
 		goal_sizeRatio = kwarg.get("goal_sizeRatio", 0.1)
 		verticalGridDis = kwarg.get("verticalGridDis", 20)
-		horizontalGridis = kwarg.get("horizontalGridis", 10)
-		verticalCO = kwarg.get("verticalCO",10)
+		horizontalGridis = kwarg.get("horizontalGridis", 15)
+		verticalCO = kwarg.get("verticalCO",1000)
 		horizontalstep = kwarg.get("horizontalstep",2)
 		verticalstep = kwarg.get("verticalstep", 1)
-		polygonMinPix = kwarg.get('polygonMinPix', 4)
+		polygonMinPix = kwarg.get('polygonMinPix', 8)
 
-		self.frechet_d_thr = kwarg.get("frechet_d_thr", 20)
+		self.frechet_d_thr = kwarg.get("frechet_d_thr", 15)
 		self.is_do_horizontal = kwarg.get("is_do_horizontal", True)
 		self.img_w = kwarg.get("img_w", 640)
 		self.img_h = kwarg.get("img_h", 480)
 		self.cross_check_tolerance = kwarg.get("cross_check_tolerance", 40)
-		self.minPix = kwarg.get('minPix', 5)
+		self.minPix = kwarg.get('minPix', 1)
 		self.polygon_scan_step = kwarg.get("polygon_scan_step", 1)
 		self.config = config
 		self.color_list = None
@@ -58,6 +57,7 @@ class ScanLandmark(object):
 										step = horizontalstep)
 		self.polygon_scanline = scanline_polygon(color_list = self.color_list, step = self.polygon_scan_step, minPix = polygonMinPix)
 		self.line_p = Line_provider(angle_threshold=line_angleThreshold, size_ratio=line_sizeRatio)
+		self.verLine_p = VerticleLine_provider()
 		self.cross_p = Cross_provider()
 		self.goal_p = Goal_provider(goal_angleThreshold, goal_sizeRatio, h2w_ratio= 2.0, distance_thr= 75)
 		self.robot_p = Robot_provider()
@@ -92,10 +92,10 @@ class ScanLandmark(object):
 		'''
 		img_hsv = img.copy() if not cvt2hsv else cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 		self.img_hsv = img_hsv.copy()
-		self.vertical_scan.find_region(img_hsv, horizon= horizon, end_scan= end_scan, minPix = self.minPix)
+		self.vertical_scan.find_region(img_hsv, horizon= horizon, minPix = self.minPix)
 		boundary = self.vertical_scan.clip_region(self.color_dict["green"].index)
 		if len(boundary) > 0:
-			horizon_end_scan = max(boundary,   key = lambda x : x[1])[1]
+			horizon_end_scan = max(boundary, key = lambda x : x[1])[1]
 			boundary = np.vstack([boundary, np.array([[img_hsv.shape[1]-1, img_hsv.shape[0]-1]])])
 			boundary = np.vstack([boundary, np.array([[0,img_hsv.shape[0]-1]])])
 		else:
@@ -107,11 +107,11 @@ class ScanLandmark(object):
 		boundary_ = convexhull[ np.where(convexhull[:,0,1] < img_hsv.shape[0] - 2) ].reshape(-1,2).astype(np.int)
 		# print boundary_
 		# boundary_ = boundary[ np.where(boundary[:,1] < img_hsv.shape[0] -2)].reshape(-1,2).astype(np.int)
-		self.polygon_scanline.find_region(img_hsv, boundary_ - 5)
-
+		self.polygon_scanline.find_region(img_hsv, boundary_ + 5)
+		self.verLine_p.scanImage(img_hsv, horizon_end_scan)
 		if self.is_do_horizontal:
 			cv2.drawContours(img_hsv, [cv2.convexHull(np.array([boundary]))], 0, (0,0,0), -1)
-			self.horizontal_scan.find_region(img_hsv, horizon= 0, end_scan= horizon_end_scan, minPix = self.minPix)
+			self.horizontal_scan.find_region(img_hsv, horizon= 0, minPix = self.minPix)
 
 		return boundary
 
@@ -134,8 +134,11 @@ class ScanLandmark(object):
 		'''Must be called after do_scan_image. This function find a line field in an image.
 		This function return list of instance of Line class(See definition at line_provider.py).
 		'''
-		self.line_p.receive_region(self.vertical_scan, connected_color=self.color_dict["white"].index)
+		self.line_p.receive_region(self.vertical_scan.get_regions(), connected_color=self.color_dict["white"].index)
 		return self.line_p.get_lines(axis= 1, frechet_distance= self.frechet_d_thr)
+
+	def get_verLine(self):
+		return self.verLine_p.get_verticalLine()
 
 	def get_crosses(self):
 		''' Must be called after get_lines. This function find a cross in an image.
@@ -151,7 +154,7 @@ class ScanLandmark(object):
 		# if self.is_do_horizontal:
 		# 	self.goal_p.receive_region(self.horizontal_scan, connected_color=self.color_dict["white"].index)
 		# 	return self.goal_p.get_filtred_Squar(boundary= cv2.convexHull(np.array([boundary])))
-		self.goal_p.receive_region(self.img_hsv, self.polygon_scanline, self.color_dict)
+		self.goal_p.receive_region(self.img_hsv, self.polygon_scanline.get_regions()[0], self.verLine_p.get_verticalLine(), self.color_dict)
 		goal = self.goal_p.get_goal()
 		return goal
 
@@ -167,3 +170,6 @@ class ScanLandmark(object):
 
 	def visualize_node(self, img):
 		self.line_p.visualize_node(img)
+
+	def visualize_polygon_scanline(self, img):
+		self.polygon_scanline.visualize(img, self.color_dict)

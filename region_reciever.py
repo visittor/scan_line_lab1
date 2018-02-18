@@ -9,92 +9,100 @@ class Region_reciver(object):
 		self.angle_threshold = 0.41
 		self.size_ratio = 1.0
 
-	def unite_region(self, region, connected_color):
-		united_region = [ linklist(region[i]) for i in range(region.lenght)]
+	def unite_region(self, regions, connected_color, axis):
+		united_region = [ [ linklist(regions[j][i]) for i in range(len(regions[j])) ] for j in range(len(regions)) ]
 		first = None
 		last = None
 		r_ = None
-		for r in range(region.lenght):
-			if region[r].color != connected_color:
-				continue
-			if r_ is None or region[r_].column != region[r].column:
-				last = first
-				first = r
-			last = self.connect_region(last, r, united_region, region)
-			r_ = r
+		for r1 in range(len(regions)):
+			last = first
+			for r2 in range(len(regions[r1])):
+				if regions[r1][r2].color != connected_color:
+					continue
+				first = r2
+				if r1 != 0:
+					last = self.connect_region(last, r2, united_region, regions[r1], regions[r1-1], r1, axis)
+				r_ = r2
 		return united_region
 
-	def connect_region(self, last, r, united_region, region):
+	def connect_region(self, last, r, united_region, region, preregion, col, axis):
+		axis = (axis+1)%2
 		if last is None:
 			return None
 
-		while last < region.lenght and region[last].stop < region[r].start and region[last].next_column == region[r].column:
+		while last < len(preregion) and preregion[last].stop[axis] < region[r].start[axis]:
 			last += 1
 
-		if region[last].next_column != region[r].column:
+		if last >= len(preregion):
 			return None
 
-		if region[last].start <= region[r].stop and region[last].color == region[r].color:
-			if self.check(united_region[last], united_region[r])==1 and united_region[last].is_tail():
-				self.link_linklist(united_region[r], united_region[last])
+		if preregion[last].start[axis] <= region[r].stop[axis] and preregion[last].color == region[r].color:
+			if self.check(united_region[col-1][last], united_region[col][r])==1 and united_region[col-1][last].is_tail():
+				self.link_linklist(united_region[col][r], united_region[col-1][last])
 
 		last_ = last + 1
-		while last_ < region.lenght and region[last_].start <= region[r].stop:
-			if region[last_].next_column != region[r].column:
+		while last_ < len(preregion) and preregion[last_].start[axis] <= region[r].stop[axis]:
+			if last_ >= len(preregion):
 				return last
 
-			if region[last_].stop >= region[r].start and region[last_].color == region[r].color:
-				if self.check(united_region[last_], united_region[r])==1 and united_region[last_].is_tail():
-					self.link_linklist(united_region[r], united_region[last_])
-
+			if preregion[last_].stop[axis] >= region[r].start[axis] and preregion[last_].color == region[r].color:
+				if self.check(united_region[col-1][last_], united_region[col][r])==1 and united_region[col-1][last_].is_tail():
+					self.link_linklist(united_region[col][r], united_region[col-1][last_])
 			else:
 				return last
 			last_ += 1
 		return last
 
-	def unite_region_and_find_node(self, region, connected_color):
-		united_region = [ linklist(region[i]) for i in range(region.lenght)]
-		nodes = [ Node(i, region[i]) for i in range(region.lenght)]
+	def find_node(self, regions, connected_color, axis):
+		# nodes = [ [Node((i+1)*(j+1) - 1, regions[j][i]) for i in range(len(regions[j]))] for j in range(len(regions))]
+		nodes = []
+		count = 0
+		lenght = 0
+		for i in range(len(regions)):
+			nodes.append([])
+			lenght += len(regions[i])
+			for j in range(len(regions[i])):
+				nodes[i].append(Node(count, regions[i][j]))
+				count += 1
 		first = None
 		last = None
 		r_ = None
-		for r in range(region.lenght):
-			if region[r].color != connected_color:
-				continue
-			if r_ is None or region[r_].column != region[r].column:
-				last = first
-				first = r
-			last = self.connect_region_and_node(last, r, united_region, nodes, region)
-			r_ = r
-		self.filter_node(nodes)
-		return united_region, nodes
+		for r1 in range(len(regions)):
+			last = first
+			first = 0
+			for r2 in range(len(regions[r1])):
+				if regions[r1][r2].color != connected_color:
+					continue
+				if r1 != 0:
+					last = self.connect_node(last, r2, nodes,regions[r1], regions[r1-1], r1, axis)
+				r_ = r2
+		# return united_region,[ j for i in nodes for j in i]
+		return [ l for k in nodes for l in k if l.data.color == connected_color]
 
-	def connect_region_and_node(self, last, r, united_region, nodes, region):
+	def connect_node(self, last, r, nodes, region, preregion, col, axis):
+		# axis = (axis+1)%2
 		if last is None:
 			return None
-
-		while last < region.lenght and region[last].stop < region[r].start and region[last].next_column == region[r].column:
+		# print "yeah", preregion[last].stop, region[r].start
+		while last < len(preregion) and preregion[last].stop[axis] > region[r].start[axis]:
 			last += 1
-
-		if region[last].next_column != region[r].column:
+		if last >= len(preregion):
 			return None
-
-		if region[last].start <= region[r].stop and region[last].color == region[r].color:
-			nodes[r].add_connected_node(nodes[last])
-			nodes[last].add_connected_node(nodes[r])
-			if self.check(united_region[last], united_region[r])==1 and united_region[last].is_tail():
-				self.link_linklist(united_region[r], united_region[last])
+		if preregion[last].start[axis] >= region[r].stop[axis] and preregion[last].color == region[r].color:
+			nodes[col][r].add_connected_node(nodes[col-1][last])
+			nodes[col-1][last].add_connected_node(nodes[col][r])
+			# if self.check(united_region[col-1][last], united_region[col][r], axis)==1 and united_region[col-1][last].is_tail():
+			# 	self.link_linklist(united_region[col][r], united_region[col-1][last])
 		last_ = last + 1
-		while last_ < region.lenght and region[last_].start <= region[r].stop:
-			if region[last_].next_column != region[r].column:
+		while last_ < len(preregion) and preregion[last_].start[axis] >= region[r].stop[axis]:
+			if last_ >= len(preregion):
 				return last
-
-			if region[last_].stop >= region[r].start:
-				if region[last_].color == region[r].color:
-					nodes[r].add_connected_node(nodes[last_])
-					nodes[last_].add_connected_node(nodes[r])
-					if self.check(united_region[last_], united_region[r])==1 and united_region[last_].is_tail():
-						self.link_linklist(united_region[r], united_region[last_])
+			if preregion[last_].stop[axis] <= region[r].start[axis]:
+				if preregion[last_].color == region[r].color:
+					nodes[col][r].add_connected_node(nodes[col-1][last_])
+					nodes[col-1][last_].add_connected_node(nodes[col][r])
+					# if self.check(united_region[col-1][last_], united_region[col][r], axis)==1 and united_region[col-1][last_].is_tail():
+					# 	self.link_linklist(united_region[col][r], united_region[col-1][last_])
 			else:
 				return last
 			last_ += 1
@@ -108,14 +116,14 @@ class Region_reciver(object):
 				continue
 			i += 1
 
-	def check(self, last, r):
+	def check(self, last, r, axis):
 		if last.is_head() == 0:
 			v1 = last.region - last.backward.region
 			v2 = r.region - last.region
-			if float(r.region.stop - r.region.start) == 0 or float(last.region.stop - last.region.start) == 0:
+			if float(r.region.stop[axis] - r.region.start[axis]) == 0 or float(last.region.stop[axis] - last.region.start[axis]) == 0:
 				return 0
-			ratio1 = float(last.region.stop - last.region.start)/float(r.region.stop - r.region.start)
-			ratio2 = float(r.region.stop - r.region.start)/float(last.region.stop - last.region.start)
+			ratio1 = float(last.region.stop[axis] - last.region.start[axis])/float(r.region.stop[axis] - r.region.start[axis])
+			ratio2 = float(r.region.stop[axis] - r.region.start[axis])/float(last.region.stop[axis] - last.region.start[axis])
 			ratio = max(ratio1, ratio2)
 			if angle_between(v1[:2], v2[:2]) < self.angle_threshold:
 				if self.size_ratio is None:
@@ -126,10 +134,10 @@ class Region_reciver(object):
 			else:
 				return 0
 		else:
-			if float(r.region.stop - r.region.start) == 0 or float(last.region.stop - last.region.start) == 0:
+			if float(r.region.stop[axis] - r.region.start[axis]) == 0 or float(last.region.stop[axis] - last.region.start[axis]) == 0:
 				return 0
-			ratio1 = float(last.region.stop - last.region.start)/float(r.region.stop - r.region.start)
-			ratio2 = float(r.region.stop - r.region.start)/float(last.region.stop - last.region.start)
+			ratio1 = float(last.region.stop[axis] - last.region.start[axis])/float(r.region.stop[axis] - r.region.start[axis])
+			ratio2 = float(r.region.stop[axis] - r.region.start[axis])/float(last.region.stop[axis] - last.region.start[axis])
 			ratio = max(ratio1, ratio2)
 			if self.size_ratio is None:
 				return 1
@@ -142,12 +150,12 @@ class Region_reciver(object):
 		for ii in united_region:
 			temp = np.zeros((0,2), dtype = np.int)
 			if ii.is_head() and ii.is_alone() == 0:
-				temp = np.append(temp, [[ii.region.column, ii.region.middle]], axis = 0)
+				temp = np.append(temp, [ii.region.middle], axis = 0)
 				ii_ = ii.forward
 				while ii_.is_tail() == 0:
-					temp = np.append(temp, [[ii_.region.column, ii_.region.middle]], axis = 0)
+					temp = np.append(temp, [ii_.region.middle], axis = 0)
 					ii_ = ii_.forward
-				temp = np.append(temp, [[ii_.region.column, ii_.region.middle]], axis = 0)
+				temp = np.append(temp, [ii_.region.middle], axis = 0)
 				if temp.shape[0] > 1:
 					point_array.append((temp, ii.region.color))
 		return point_array
@@ -161,10 +169,14 @@ class Region_reciver(object):
 			if i.is_tail() == 0:
 				start = i.region
 				stop = i.forward.region
-				p1 = (start.column,start.start) if axis == 1 else (start.start,start.column)
-				p2 = (stop.column,stop.start) if axis == 1 else (stop.start,stop.column)
-				p3 = (start.column,start.stop) if axis == 1 else (start.stop,start.column)
-				p4 = (stop.column,stop.stop) if axis == 1 else (stop.stop,stop.column)
+				# p1 = (start.column,start.start) if axis == 1 else (start.start,start.column)
+				# p2 = (stop.column,stop.start) if axis == 1 else (stop.start,stop.column)
+				# p3 = (start.column,start.stop) if axis == 1 else (start.stop,start.column)
+				# p4 = (stop.column,stop.stop) if axis == 1 else (stop.stop,stop.column)
+				p1 = tuple(start.start)
+				p2 = tuple(stop.start)
+				p3 = tuple(start.stop)
+				p4 = tuple(stop.stop)
 				cv2.line(img, p1, p2, (0,0,255), 2)
 				cv2.line(img, p3, p4, (0,0,255), 2)
 				if i.is_head():
@@ -174,11 +186,11 @@ class Region_reciver(object):
 
 	def visualize_node(self, img, nodes, axis, circle_size = 3, color = [255, 0, 255]):
 		for n in nodes:
-			p = (n.data.column,n.data.middle) if axis == 1 else (n.data.middle, n.data.column)
+			p = tuple(n.data.middle)
 			cv2.circle(img, p, circle_size * n.number_of_connected_node, color, -1)
 			for cn in n.connected_node:
-				p1 = (cn.data.column,cn.data.middle) if axis == 1 else (cn.data.middle,cn.data.column)
-				p2 = (n.data.column,n.data.middle) if axis == 1 else (n.data.middle,n.data.column)
+				p1 = tuple(cn.data.middle)
+				p2 = tuple(n.data.middle)
 				cv2.line(img, p1, p2, color, 2)
 
 	def set_size_ratio(self, size_ratio):
@@ -202,8 +214,8 @@ class linklist(object):
 		return 1 if self._previous is None else 0
 
 	def is_tail(self):
-		if self._next is not None and self._next._previous is None:
-			print "maybe this a bug."
+		# if self._next is not None and self._next._previous is None:
+		# 	print "maybe this a bug."
 		return 1 if self._next is None else 0
 
 	def is_alone(self):

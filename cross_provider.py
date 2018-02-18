@@ -49,7 +49,8 @@ class Cross_provider(object):
 			num_node = -1
 			i = 0
 			while i < len(crossing):
-				if np.linalg.norm(p - np.array([crossing[i].data.column, crossing[i].data.middle])) < tolerance:
+				# if np.linalg.norm(p - np.array([crossing[i].data.column, crossing[i].data.middle])) < tolerance:
+				if np.linalg.norm(p - crossing[i].data.middle) < tolerance:
 					num_node = crossing[i].number_of_connected_node
 					crossing.pop(i)
 					if num_node == 3:
