@@ -13,6 +13,7 @@
 *.gz
 *.tar.gz
 *.tar
+chessboard/*
 TO_P_ONG/cython_function/find_pattern.pyx
 TO_P_ONG/cython_function/linklist.pxd
 TO_P_ONG/cython_function/linklist.pyx

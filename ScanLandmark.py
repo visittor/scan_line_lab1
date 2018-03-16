@@ -108,7 +108,7 @@ class ScanLandmark(object):
 		# print boundary_
 		# boundary_ = boundary[ np.where(boundary[:,1] < img_hsv.shape[0] -2)].reshape(-1,2).astype(np.int)
 		self.polygon_scanline.find_region(img_hsv, boundary_ + 5)
-		self.verLine_p.scanImage(img_hsv, horizon_end_scan)
+		# self.verLine_p.scanImage(img_hsv, horizon_end_scan)
 		if self.is_do_horizontal:
 			cv2.drawContours(img_hsv, [cv2.convexHull(np.array([boundary]))], 0, (0,0,0), -1)
 			self.horizontal_scan.find_region(img_hsv, horizon= 0, minPix = self.minPix)

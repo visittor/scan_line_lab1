@@ -184,7 +184,6 @@ class VerticleLine_provider(object):
 			skyHSV = np.float64(skyHSV) / 255.0
 			sobel = np.absolute(cv2.Sobel(skyHSV, -1, 1, 0, scale=255)).astype(np.uint8)
 			cv2.threshold(sobel, 127, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU, sobel)
-			cv2.imshow("sobel", sobel)
 			verLines = cv2.HoughLinesP(sobel,1,np.pi/2.0,100, horizon/50, 10)
 			if verLines is not None:
 				verLines = verLines.reshape(-1,4).astype(int)
