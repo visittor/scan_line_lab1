@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 file_name = "leipzig_012.avi"
-cap = cv2.VideoCapture(file_name)
+cap = cv2.VideoCapture(1)
 # cap = cv2.VideoCapture(1)
 cv2.namedWindow('set')
 def nothing(somethings):
@@ -17,6 +17,7 @@ cv2.createTrackbar('R2', 'set', 0, 255, nothing)
 is_puase = 0
 # img = cv2.imread("pass_4.jpg")
 # img = cv2.resize(img, None, fx = 0.25, fy = 0.25)
+lookup = np.array( [ 255.0*((float(i)/255.0)**(1.5)) for i in range(256) ], dtype = np.uint8 )
 while True:
 	if not is_puase:
 		ret,frame = cap.read()
@@ -26,8 +27,19 @@ while True:
 		    ret,frame = cap.read()
 		# frame = img.copy()
 	# frame = cv2.flip(frame,0)
-		# frame = cv2.GaussianBlur(frame,(3,3),0)
+	frame[:] = lookup[frame]
+	frame = cv2.GaussianBlur(frame,(5,5),0)
+	kernel = np.ones((3,3),np.uint8)
+	# frame = cv2.morphologyEx(frame, cv2.MORPH_OPEN, kernel)
+	# frame = cv2.morphologyEx(frame, cv2.MORPH_BLACKHAT, kernel)
+
 	tran_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+
+	thr = cv2.adaptiveThreshold(tran_frame[:,:,1],255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,10)
+	thr = 255-thr
+	thr = cv2.morphologyEx(thr, cv2.MORPH_TOPHAT, kernel)
+	# thr = cv2.morphologyEx(thr, cv2.MORPH_BLACKHAT, kernel)
+
 	H1 = cv2.getTrackbarPos('B1', 'set')
 	H2 = cv2.getTrackbarPos('B2', 'set')
 	S1 = cv2.getTrackbarPos('G1', 'set')
@@ -48,6 +60,7 @@ while True:
 	stack2 = np.hstack([tran_frame[:, :, 0], tran_frame[:, :, 1], tran_frame[:, :, 2]])
 	cv2.imshow('stack1',stack1)
 	cv2.imshow('stack2',stack2)
+	cv2.imshow('stack3',thr)
 	# stack = np.hstack((frame, mask))
 	# cv2.imshow('window',stack)
 	k = cv2.waitKey(10)

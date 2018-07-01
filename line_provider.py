@@ -109,6 +109,8 @@ class Line_provider(Region_reciver):
 			x = p[:,0]
 			y = p[:,1]
 			A = np.vstack([x, np.ones(len(x))]).T
+			if len(A) == 0:
+				continue
 			try:
 				m, c = np.linalg.lstsq(A, y)[0]
 				# lines_.append([m,c,x[0],x[-1],color,p.shape[0]])

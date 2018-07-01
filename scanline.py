@@ -144,6 +144,10 @@ class Region(object):
 	def color(self):
 		return self.region[4]
 
+	@property
+	def length(self):
+		return np.linalg.norm(self.region[:2] - self.region[2:4])
+
 	def __sub__(self, b):
 		a = self.middle - b.middle
 		return a
